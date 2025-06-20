@@ -239,11 +239,21 @@ func (s *State) onEvent(iface interface{}) {
 		}
 
 	case *gateway.MessageCreateEvent:
+		if ev.GuildID.IsValid() && ev.Member != nil {
+			if err := s.Cabinet.MemberStore.MemberSet(ev.GuildID, ev.Member, false); err != nil {
+				s.stateErr(err, "failed to add a member in state from message create")
+			}
+		}
 		if err := s.Cabinet.MessageSet(&ev.Message, false); err != nil {
 			s.stateErr(err, "failed to add a message in state")
 		}
 
 	case *gateway.MessageUpdateEvent:
+		if ev.GuildID.IsValid() && ev.Member != nil {
+			if err := s.Cabinet.MemberStore.MemberSet(ev.GuildID, ev.Member, false); err != nil {
+				s.stateErr(err, "failed to add a member in state from message create")
+			}
+		}
 		if err := s.Cabinet.MessageSet(&ev.Message, true); err != nil {
 			s.stateErr(err, "failed to update a message in state")
 		}

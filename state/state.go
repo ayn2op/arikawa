@@ -859,6 +859,20 @@ func (s *State) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 	return s.fetchRoles(guildID)
 }
 
+// DetermineUploadSize returns the upload size limit for a given guild ID, if
+// any. Most bots could simply skip this and use [api.UploadSizeLimit] directly.
+// Note that if the guild does not exist or cannot be fetched, then
+// [api.UploadSizeLimit] is silently returned.
+func (s *State) DetermineUploadSize(guildID discord.GuildID) int {
+	me, err := s.Me()
+	if err != nil {
+		return api.UploadSizeLimit
+	}
+
+	guild, _ := s.Guild(guildID)
+	return api.DetermineUploadSize(me, guild)
+}
+
 func (s *State) fetchGuild(id discord.GuildID) (g *discord.Guild, err error) {
 	g, err = s.Session.Guild(id)
 	if err == nil && s.HasIntents(gateway.IntentGuilds) {

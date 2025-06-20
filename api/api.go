@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/diamondburned/arikawa/v3/api/rate"
 	"github.com/diamondburned/arikawa/v3/discord"
@@ -96,6 +97,13 @@ type Session struct {
 
 	Token     string
 	UserAgent string
+}
+
+// IsBot checks if the session is a bot session.
+// This is determined by the token's prefix.
+func (s *Session) IsBot() bool {
+	prefix, _, _ := strings.Cut(s.Token, " ")
+	return prefix == "Bot"
 }
 
 // AuditLogReason is the type embedded in data structs when the action

@@ -180,3 +180,60 @@ func (c *Client) SendMessageComplex(
 	var msg *discord.Message
 	return msg, sendpart.POST(c.Client, data, &msg, URL)
 }
+
+// Constants for Discord's various upload size limits.
+// You may use [api.Client.DetermineUploadSize] or [state.State.DetermineUploadSize]
+// to determine which upload size to use.
+const (
+	UploadSizeLimit                = 10 << 20  //  10 MiB - https://github.com/discord/discord-api-docs/blob/main/docs/reference.mdx#uploading-files
+	UploadSizeLimitWithNitroBasic  = 50 << 20  //  50 MiB - https://support.discord.com/hc/en-us/articles/115000435108-What-are-Nitro-Nitro-Basic
+	UploadSizeLimitWithNitroFull   = 500 << 20 // 500 MiB
+	UploadSizeLimitWithLevel2Boost = 50 << 20  //  50 MiB - https://support.discord.com/hc/en-us/articles/360028038352-Server-Boosting-FAQ#h_419c3bd5-addd-4989-b7cf-c7957ef92583
+	UploadSizeLimitWithLevel3Boost = 100 << 20 // 100 MiB
+)
+
+// DetermineUploadSize returns the upload size limit for a given guild ID, if
+// any. Most bots could simply skip this and use [UploadSizeLimit] directly.
+func (c *Client) DetermineUploadSize(guildID discord.GuildID) int {
+	if c.IsBot() {
+		return UploadSizeLimit // fast path for bots
+	}
+
+	me, err := c.Me()
+	if err != nil {
+		return UploadSizeLimit // assume no boosts
+	}
+
+	guild, _ := c.Guild(guildID)
+	return DetermineUploadSize(me, guild)
+}
+
+// DetermineUploadSize determines the upload size limit for a user in a guild
+// (if any; nil otherwise).
+func DetermineUploadSize(me *discord.User, guild *discord.Guild) int {
+	if me.Bot {
+		return UploadSizeLimit
+	}
+
+	limit := UploadSizeLimit
+
+	switch me.Nitro {
+	// Classic is considiered the same as Basic.
+	// https://support.discord.com/hc/hi-in/articles/115000435108-Nitro-Nitro-Classic-Nitro-Basic
+	case discord.NitroBasic, discord.NitroClassic:
+		limit = max(limit, UploadSizeLimitWithNitroBasic)
+	case discord.NitroFull:
+		limit = max(limit, UploadSizeLimitWithNitroFull)
+	}
+
+	if guild != nil {
+		switch guild.NitroBoost {
+		case discord.NitroLevel2:
+			limit = max(limit, UploadSizeLimitWithLevel2Boost)
+		case discord.NitroLevel3:
+			limit = max(limit, UploadSizeLimitWithLevel3Boost)
+		}
+	}
+
+	return limit
+}

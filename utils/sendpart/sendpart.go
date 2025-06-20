@@ -27,6 +27,32 @@ func (f File) AttachmentURI() string {
 	return u.String()
 }
 
+// GuessSize tries to guess the size of the [io.Reader] by checking if it
+// implements [io.Seeker]. If not, then (0, false) is returned. This is useful
+// if the reader is an [*os.File].
+func (f File) GuessSize() (int64, bool) {
+	seeker, ok := f.Reader.(io.Seeker)
+	if !ok {
+		return 0, false
+	}
+
+	// get current position. this makes no change to the file cursor.
+	n1, err := seeker.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return 0, false
+	}
+
+	// seek to the end of the file.
+	n2, err := seeker.Seek(0, io.SeekEnd)
+	if err != nil {
+		seeker.Seek(n1, io.SeekStart) // try to restore the cursor
+		return 0, false
+	}
+
+	_, err = seeker.Seek(n1, io.SeekStart) // restore the cursor
+	return n2 - n1, err == nil
+}
+
 // DataMultipartWriter is a MultipartWriter that also contains data that's
 // JSON-marshalable.
 type DataMultipartWriter interface {

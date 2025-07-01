@@ -182,12 +182,18 @@ type IdentifyProperties struct {
 	Browser string `json:"browser"` // Arikawa
 	Device  string `json:"device"`  // Arikawa
 
-	// Optional
-	BrowserUserAgent string `json:"browser_user_agent,omitempty"`
-	BrowserVersion   string `json:"browser_version,omitempty"`
-	OSVersion        string `json:"os_version,omitempty"`
-	Referrer         string `json:"referrer,omitempty"`
-	ReferringDomain  string `json:"referring_domain,omitempty"`
+	// Optional (not applicable to bots)
+	BrowserUserAgent      string           `json:"browser_user_agent,omitempty"`
+	BrowserVersion        string           `json:"browser_version,omitempty"`
+	OSVersion             string           `json:"os_version,omitempty"`
+	Referrer              string           `json:"referrer,omitempty"`
+	ReferrerCurrent       string           `json:"referrer_current,omitempty"`
+	ReferrerDomainCurrent string           `json:"referrer_domain_current,omitempty"`
+	ReferringDomain       string           `json:"referring_domain,omitempty"`
+	ClientBuildNumber     string           `json:"client_build_number,omitempty"`
+	ReleaseChannel        string           `json:"release_channel,omitempty"`
+	SystemLocale          discord.Language `json:"system_locale,omitempty"`
+	HasClientMods         bool             `json:"has_client_mods,omitempty"`
 }
 
 // Shard is a type for two numbers that represent the Bot's shard configuration.

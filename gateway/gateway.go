@@ -170,6 +170,12 @@ func NewFromState(gatewayURL string, state State, opts *ws.GatewayOpts) *Gateway
 	}
 
 	gw := ws.NewGateway(ws.NewWebsocket(ws.NewCodec(OpUnmarshalers), gatewayURL), opts)
+	return FromWebsocketGateway(gw, state)
+}
+
+// FromWebsocketGateway wraps the given Websocket Gateway into a Gateway
+// instance.
+func FromWebsocketGateway(gw *ws.Gateway, state State) *Gateway {
 	return &Gateway{
 		gateway: gw,
 		state:   state,

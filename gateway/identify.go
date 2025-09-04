@@ -94,13 +94,24 @@ func (id *Identifier) QueryGateway(ctx context.Context) (gatewayURL string, err 
 	return
 }
 
+const (
+	IdentifyOS      IdentifyPropertyKey = "os"
+	IdentifyBrowser IdentifyPropertyKey = "browser"
+	IdentifyDevice  IdentifyPropertyKey = "device"
+)
+
 // DefaultIdentity is used as the default identity when initializing a new
 // Gateway.
 var DefaultIdentity = IdentifyProperties{
-	OS:      runtime.GOOS,
-	Browser: "Arikawa",
-	Device:  "Arikawa",
+	IdentifyOS:      runtime.GOOS,
+	IdentifyBrowser: "Arikawa",
+	IdentifyDevice:  "Arikawa",
 }
+
+type (
+	IdentifyPropertyKey string
+	IdentifyProperties  map[IdentifyPropertyKey]any
+)
 
 // IdentifyCommand is a command for Op 2. It is the struct for a data that's
 // sent over in an Identify command.
@@ -174,26 +185,6 @@ func (i *IdentifyCommand) HasIntents(intents Intents) bool {
 	}
 
 	return Intents(*i.Intents).Has(intents)
-}
-
-type IdentifyProperties struct {
-	// Required
-	OS      string `json:"os"`      // GOOS
-	Browser string `json:"browser"` // Arikawa
-	Device  string `json:"device"`  // Arikawa
-
-	// Optional (not applicable to bots)
-	ClientBuildNumber     int              `json:"client_build_number,omitempty"`
-	BrowserUserAgent      string           `json:"browser_user_agent,omitempty"`
-	BrowserVersion        string           `json:"browser_version,omitempty"`
-	OSVersion             string           `json:"os_version,omitempty"`
-	Referrer              string           `json:"referrer,omitempty"`
-	ReferrerCurrent       string           `json:"referrer_current,omitempty"`
-	ReferrerDomainCurrent string           `json:"referrer_domain_current,omitempty"`
-	ReferringDomain       string           `json:"referring_domain,omitempty"`
-	ReleaseChannel        string           `json:"release_channel,omitempty"`
-	SystemLocale          discord.Language `json:"system_locale,omitempty"`
-	HasClientMods         bool             `json:"has_client_mods,omitempty"`
 }
 
 // Shard is a type for two numbers that represent the Bot's shard configuration.

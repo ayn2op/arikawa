@@ -765,14 +765,6 @@ type (
 		ExtrasDecodeErrors []error
 	}
 
-	// ReadState is a single ReadState entry. It is undocumented.
-	ReadState struct {
-		ChannelID        discord.ChannelID `json:"id"`
-		LastMessageID    discord.MessageID `json:"last_message_id"`
-		LastPinTimestamp discord.Timestamp `json:"last_pin_timestamp"`
-		MentionCount     int               `json:"mention_count"`
-	}
-
 	UserSession struct {
 		Status    discord.Status `json:"status"`
 		SessionID string         `json:"session_id"`
@@ -884,6 +876,33 @@ type (
 		MutualGuilds  bool `json:"mutual_guilds,omitempty"`
 		MutualFriends bool `json:"mutual_friends,omitempty"`
 	}
+)
+
+// https://docs.discord.food/topics/read-state#read-state-structure
+type ReadState struct {
+	ChannelID discord.ChannelID `json:"id"`
+	// Type is the type of read state (default: ReadStateTypeChannel).
+	Type ReadStateType `json:"read_state_type"`
+	// LastMessageID is the ID of the last acknowledged message.
+	LastMessageID discord.MessageID `json:"last_message_id"`
+	// LastPinTimestamp is when the last acknowledged pinned message was pinned.
+	LastPinTimestamp discord.Timestamp `json:"last_pin_timestamp"`
+	// MentionCount is the number of unread mentions.
+	MentionCount int `json:"mention_count"`
+	// BadgeCount is the number of unread badges.
+	BadgeCount int `json:"badge_count"`
+}
+
+// https://docs.discord.food/topics/read-state#read-state-type
+type ReadStateType uint
+
+const (
+	ReadStateTypeChannel ReadStateType = iota
+	ReadStateTypeGuildEvent
+	ReadStateTypeNotificationCenter
+	ReadStateTypeGuildHome
+	ReadStateTypeGuildOnboardingQuestion
+	ReadStateMessageRequests
 )
 
 // UserNotification is the notification setting for a channel or guild.

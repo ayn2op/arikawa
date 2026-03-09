@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/diamondburned/arikawa/v3/utils/json/enum"
+	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
 // https://discord.com/developers/docs/resources/channel#message-object
@@ -111,6 +112,9 @@ type Message struct {
 	// This field is only populated if Reference.Type is
 	// [MessageReferenceTypeForward].
 	MessageSnapshots []MessageSnapshot `json:"message_snapshots,omitempty"`
+
+	// Thread is the thread that was started from this message, includes the thread member object.
+	Thread option.Optional[Channel] `json:"thread,omitzero"`
 
 	// Call is the private channel call (MessageCall) that prompted this message.
 	Call MessageCall `json:"call,omitzero"`

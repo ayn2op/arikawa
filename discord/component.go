@@ -333,6 +333,18 @@ type InteractiveComponent interface {
 // TopLevelComponent is the opposite of InteractiveComponent: it describes
 // components that only contain other components. The only component that
 // satisfies that is ActionRow.
+//
+// The following types satisfy this interface:
+//
+//   - *ActionRowComponent
+//   - *SectionComponent
+//   - *TextDisplayComponent
+//   - *MediaGalleryComponent
+//   - *FileComponent
+//   - *SeparatorComponent
+//   - *ContainerComponent
+//   - *LabelComponent
+//   - *FileUploadComponent
 type TopLevelComponent interface {
 	Component
 	_tlc()

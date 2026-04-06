@@ -336,15 +336,15 @@ type InteractiveComponent interface {
 //
 // The following types satisfy this interface:
 //
-//   - *ActionRowComponent
-//   - *SectionComponent
-//   - *TextDisplayComponent
-//   - *MediaGalleryComponent
-//   - *FileComponent
-//   - *SeparatorComponent
-//   - *ContainerComponent
-//   - *LabelComponent
-//   - *FileUploadComponent
+//   - [ActionRowComponent]
+//   - [SectionComponent]
+//   - [TextDisplayComponent]
+//   - [MediaGalleryComponent]
+//   - [FileComponent]
+//   - [SeparatorComponent]
+//   - [ContainerComponent]
+//   - [LabelComponent]
+//   - [FileUploadComponent]
 type TopLevelComponent interface {
 	Component
 	_tlc()

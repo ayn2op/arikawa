@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/ayn2op/arikawa/v3/utils/json"
 )
 
 // OpCode is the type for websocket Op codes. Op codes less than 0 are

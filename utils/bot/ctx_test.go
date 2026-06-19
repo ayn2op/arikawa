@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/arikawa/v3/state/store"
-	"github.com/diamondburned/arikawa/v3/utils/handler"
+	"github.com/ayn2op/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/gateway"
+	"github.com/ayn2op/arikawa/v3/state"
+	"github.com/ayn2op/arikawa/v3/state/store"
+	"github.com/ayn2op/arikawa/v3/utils/handler"
 )
 
 type testUnexportedCtx struct {

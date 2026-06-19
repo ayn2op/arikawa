@@ -1,9 +1,9 @@
-module github.com/diamondburned/arikawa/v3/0-examples/voice
+module github.com/ayn2op/arikawa/v3/0-examples/voice
 
 go 1.24
 
 require (
-	github.com/diamondburned/arikawa/v3 v3.0.0-rc.6
+	github.com/ayn2op/arikawa/v3 v3.0.0-rc.6
 	github.com/diamondburned/oggreader v0.0.0-20201118014549-87df9534b647
 )
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/utils/json"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"github.com/ayn2op/arikawa/v3/utils/json"
+	"github.com/ayn2op/arikawa/v3/utils/json/option"
 )
 
 // CommandType is the type of the command, which describes the intended

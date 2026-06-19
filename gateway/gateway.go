@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/internal/lazytime"
-	"github.com/diamondburned/arikawa/v3/utils/ws"
+	"github.com/ayn2op/arikawa/v3/api"
+	"github.com/ayn2op/arikawa/v3/internal/lazytime"
+	"github.com/ayn2op/arikawa/v3/utils/ws"
 )
 
 var (

@@ -1,4 +1,4 @@
-module github.com/diamondburned/arikawa/v3
+module github.com/ayn2op/arikawa/v3
 
 go 1.25.0
 

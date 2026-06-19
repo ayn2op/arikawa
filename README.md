@@ -18,7 +18,7 @@ A Golang library for the Discord API.
 [pipeline]:     https://github.com/diamondburned/arikawa/actions/workflows/test.yml
 [pipeline_img]: https://img.shields.io/github/actions/workflow/status/diamondburned/arikawa/test.yml?style=flat-square&label=Tests
 
-[pkg.go.dev]:     https://pkg.go.dev/github.com/diamondburned/arikawa/v3
+[pkg.go.dev]:     https://pkg.go.dev/github.com/ayn2op/arikawa/v3
 [pkg.go.dev_img]: https://img.shields.io/badge/%E2%80%8B-reference-007d9c?logo=go&logoColor=white&style=flat-square
 
 [himeArikawa]:     https://hime-goto.fandom.com/wiki/Hime_Arikawa
@@ -93,11 +93,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/api/cmdroute"
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"github.com/ayn2op/arikawa/v3/api"
+	"github.com/ayn2op/arikawa/v3/api/cmdroute"
+	"github.com/ayn2op/arikawa/v3/gateway"
+	"github.com/ayn2op/arikawa/v3/state"
+	"github.com/ayn2op/arikawa/v3/utils/json/option"
 )
 
 var commands = []api.CreateCommandData{{Name: "ping", Description: "Ping!"}}

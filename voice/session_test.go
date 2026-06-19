@@ -10,15 +10,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/internal/testenv"
-	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
-	"github.com/diamondburned/arikawa/v3/utils/ws"
-	"github.com/diamondburned/arikawa/v3/voice/testdata"
-	"github.com/diamondburned/arikawa/v3/voice/udp"
-	"github.com/diamondburned/arikawa/v3/voice/voicegateway"
+	"github.com/ayn2op/arikawa/v3/api"
+	"github.com/ayn2op/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/internal/testenv"
+	"github.com/ayn2op/arikawa/v3/state"
+	"github.com/ayn2op/arikawa/v3/utils/json/option"
+	"github.com/ayn2op/arikawa/v3/utils/ws"
+	"github.com/ayn2op/arikawa/v3/voice/testdata"
+	"github.com/ayn2op/arikawa/v3/voice/udp"
+	"github.com/ayn2op/arikawa/v3/voice/voicegateway"
 )
 
 func doLog(t *testing.T) {

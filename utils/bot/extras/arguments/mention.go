@@ -4,7 +4,7 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/discord"
 )
 
 var (

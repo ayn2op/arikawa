@@ -3,9 +3,9 @@ package defaultstore
 import (
 	"sync"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/internal/moreatomic"
-	"github.com/diamondburned/arikawa/v3/state/store"
+	"github.com/ayn2op/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/internal/moreatomic"
+	"github.com/ayn2op/arikawa/v3/state/store"
 )
 
 type Emoji struct {

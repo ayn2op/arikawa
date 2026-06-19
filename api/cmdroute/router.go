@@ -3,9 +3,9 @@ package cmdroute
 import (
 	"context"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/api/webhook"
-	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/api"
+	"github.com/ayn2op/arikawa/v3/api/webhook"
+	"github.com/ayn2op/arikawa/v3/discord"
 )
 
 // Router is a router for slash commands. A zero-value Router is a valid router.

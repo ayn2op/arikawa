@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/ayn2op/arikawa/v3/utils/json"
 )
 
 // Codec holds the codec states for Websocket implementations to share with the

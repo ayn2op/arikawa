@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/ayn2op/arikawa/v3/gateway"
+	"github.com/ayn2op/arikawa/v3/session"
 )
 
 // To run, do `BOT_TOKEN="TOKEN HERE" go run .`

@@ -1,6 +1,6 @@
 package api
 
-import "github.com/diamondburned/arikawa/v3/utils/httputil"
+import "github.com/ayn2op/arikawa/v3/utils/httputil"
 
 var EndpointRemoteAuthLogin = EndpointMe + "/remote-auth/login"
 

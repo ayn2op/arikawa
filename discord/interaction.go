@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/diamondburned/arikawa/v3/internal/rfutil"
-	"github.com/diamondburned/arikawa/v3/utils/json"
+	"github.com/ayn2op/arikawa/v3/internal/rfutil"
+	"github.com/ayn2op/arikawa/v3/utils/json"
 )
 
 // InteractionEvent describes the full incoming interaction event. It may be a

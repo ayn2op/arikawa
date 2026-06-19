@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/internal/intmath"
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"github.com/ayn2op/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/internal/intmath"
+	"github.com/ayn2op/arikawa/v3/utils/httputil"
+	"github.com/ayn2op/arikawa/v3/utils/json/option"
 )
 
 const MaxMemberFetchLimit = 1000

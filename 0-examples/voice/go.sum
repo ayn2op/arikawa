@@ -1,5 +1,5 @@
-github.com/diamondburned/arikawa/v3 v3.0.0-rc.6 h1:lALIGxvojmcO/T6zeO53OzFXsuVWhXZ0Q/lYPehiKg0=
-github.com/diamondburned/arikawa/v3 v3.0.0-rc.6/go.mod h1:5jBSNnp82Z/EhsKa6Wk9FsOqSxfVkNZDTDBPOj47LpY=
+github.com/ayn2op/arikawa/v3 v3.0.0-rc.6 h1:lALIGxvojmcO/T6zeO53OzFXsuVWhXZ0Q/lYPehiKg0=
+github.com/ayn2op/arikawa/v3 v3.0.0-rc.6/go.mod h1:5jBSNnp82Z/EhsKa6Wk9FsOqSxfVkNZDTDBPOj47LpY=
 github.com/diamondburned/oggreader v0.0.0-20201118014549-87df9534b647 h1:TJWvffl1cMLzSOvw8Wv3CQicuU9NaKDKXvBfh5T9W00=
 github.com/diamondburned/oggreader v0.0.0-20201118014549-87df9534b647/go.mod h1:xEJuvlmPx1wBKUWkx+MUp1ULSMQwSM9FS+bnFJhPQkk=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=

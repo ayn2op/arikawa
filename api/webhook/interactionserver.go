@@ -12,8 +12,8 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/api"
+	"github.com/ayn2op/arikawa/v3/discord"
 )
 
 func writeError(w http.ResponseWriter, code int, err error) {

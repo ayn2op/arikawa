@@ -11,13 +11,13 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/api/rate"
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
-	"github.com/diamondburned/arikawa/v3/utils/httputil/httpdriver"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
-	"github.com/diamondburned/arikawa/v3/utils/sendpart"
+	"github.com/ayn2op/arikawa/v3/api"
+	"github.com/ayn2op/arikawa/v3/api/rate"
+	"github.com/ayn2op/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/utils/httputil"
+	"github.com/ayn2op/arikawa/v3/utils/httputil/httpdriver"
+	"github.com/ayn2op/arikawa/v3/utils/json/option"
+	"github.com/ayn2op/arikawa/v3/utils/sendpart"
 )
 
 // TODO: if there's ever an Arikawa v3, then a new Client abstraction could be

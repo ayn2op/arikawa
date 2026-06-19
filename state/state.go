@@ -8,14 +8,14 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/session"
-	"github.com/diamondburned/arikawa/v3/session/shard"
-	"github.com/diamondburned/arikawa/v3/state/store"
-	"github.com/diamondburned/arikawa/v3/state/store/defaultstore"
-	"github.com/diamondburned/arikawa/v3/utils/handler"
+	"github.com/ayn2op/arikawa/v3/api"
+	"github.com/ayn2op/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/gateway"
+	"github.com/ayn2op/arikawa/v3/session"
+	"github.com/ayn2op/arikawa/v3/session/shard"
+	"github.com/ayn2op/arikawa/v3/state/store"
+	"github.com/ayn2op/arikawa/v3/state/store/defaultstore"
+	"github.com/ayn2op/arikawa/v3/utils/handler"
 )
 
 var (

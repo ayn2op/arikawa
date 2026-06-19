@@ -3,8 +3,8 @@ package cmdroute
 import (
 	"context"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/api"
+	"github.com/ayn2op/arikawa/v3/discord"
 )
 
 // InteractionHandler is similar to webhook.InteractionHandler, but it also

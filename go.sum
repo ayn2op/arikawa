@@ -1,3 +1,5 @@
+github.com/diamondburned/oggreader v0.0.0-20201118014549-87df9534b647 h1:TJWvffl1cMLzSOvw8Wv3CQicuU9NaKDKXvBfh5T9W00=
+github.com/diamondburned/oggreader v0.0.0-20201118014549-87df9534b647/go.mod h1:xEJuvlmPx1wBKUWkx+MUp1ULSMQwSM9FS+bnFJhPQkk=
 github.com/gorilla/schema v1.4.1 h1:jUg5hUjCSDZpNGLuXQOgIWGdlgrIdYvgQ0wZtdK1M3E=
 github.com/gorilla/schema v1.4.1/go.mod h1:Dg5SSm5PV60mhF2NFaTV1xuYYj8tV8NOPRo4FggUMnM=
 github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=

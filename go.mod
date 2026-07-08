@@ -9,4 +9,7 @@ require (
 	golang.org/x/time v0.15.0
 )
 
-require golang.org/x/sys v0.41.0 // indirect
+require (
+	github.com/diamondburned/oggreader v0.0.0-20201118014549-87df9534b647 // indirect
+	golang.org/x/sys v0.41.0 // indirect
+)

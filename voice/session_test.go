@@ -148,8 +148,7 @@ func raceMe(t *testing.T, wrapErr string, fn func() error) {
 	var err error
 
 	for range n {
-		wgr.Add(1)
-		go func() {
+		wgr.Go(func() {
 			e := fn()
 
 			mut.Lock()
@@ -162,8 +161,7 @@ func raceMe(t *testing.T, wrapErr string, fn func() error) {
 				t.Log("Potential race test error:", e)
 			}
 
-			wgr.Done()
-		}()
+		})
 	}
 
 	wgr.Wait()

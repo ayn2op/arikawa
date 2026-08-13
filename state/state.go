@@ -359,11 +359,9 @@ func (s *State) Permissions(
 
 	switch {
 	case gerr != nil && merr != nil:
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			g, gerr = s.fetchGuild(ch.GuildID)
-			wg.Done()
-		}()
+		})
 
 		m, merr = s.fetchMember(ch.GuildID, userID)
 	case gerr != nil:
@@ -373,25 +371,19 @@ func (s *State) Permissions(
 	}
 
 	if gerr != nil {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			g, gerr = s.fetchGuild(ch.GuildID)
-			wg.Done()
-		}()
+		})
 	}
 	if merr != nil {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			m, merr = s.fetchMember(ch.GuildID, userID)
-			wg.Done()
-		}()
+		})
 	}
 	if rerr != nil {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			rs, rerr = s.fetchRoles(ch.GuildID)
-			wg.Done()
-		}()
+		})
 	}
 
 	wg.Wait()
@@ -645,15 +637,13 @@ func (s *State) Message(
 
 	c, cerr = s.Cabinet.Channel(channelID)
 	if cerr != nil || !s.tracksChannel(c) {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			c, cerr = s.Session.Channel(channelID)
 			if cerr == nil && s.HasIntents(gateway.IntentGuilds) {
 				s.Cabinet.ChannelSet(c, false)
 			}
 
-			wg.Done()
-		}()
+		})
 	}
 
 	m, err = s.Session.Message(channelID, messageID)

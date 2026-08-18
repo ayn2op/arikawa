@@ -8,24 +8,18 @@ import (
 	"github.com/ayn2op/arikawa/v3/utils/ws"
 )
 
-var (
-	// eventIntents maps event pointer types to intents.
-	eventIntents     map[reflect.Type]gateway.Intents
-	eventIntentsOnce sync.Once
-)
-
-func ensureEventIntents() {
-	eventIntentsOnce.Do(func() {
-		eventIntents = map[reflect.Type]gateway.Intents{}
-		gateway.OpUnmarshalers.Each(func(_ ws.OpCode, t ws.EventType, f ws.OpFunc) bool {
-			intent, ok := gateway.EventIntents[t]
-			if ok {
-				eventIntents[reflect.TypeOf(f())] = intent
-			}
-			return false
-		})
+// eventIntents maps event pointer types to intents.
+var eventIntents = sync.OnceValue(func() map[reflect.Type]gateway.Intents {
+	intents := map[reflect.Type]gateway.Intents{}
+	gateway.OpUnmarshalers.Each(func(_ ws.OpCode, t ws.EventType, f ws.OpFunc) bool {
+		intent, ok := gateway.EventIntents[t]
+		if ok {
+			intents[reflect.TypeOf(f())] = intent
+		}
+		return false
 	})
-}
+	return intents
+})
 
 type command struct {
 	value       reflect.Value // Func
@@ -51,9 +45,7 @@ func (c *command) call(arg0 any, argv ...reflect.Value) (any, error) {
 
 // intents returns the command's intents from the event.
 func (c *command) intents() gateway.Intents {
-	ensureEventIntents()
-
-	intents, ok := eventIntents[c.event]
+	intents, ok := eventIntents()[c.event]
 	if !ok {
 		return 0
 	}

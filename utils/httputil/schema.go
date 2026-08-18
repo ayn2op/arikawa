@@ -13,19 +13,19 @@ type SchemaEncoder interface {
 }
 
 type DefaultSchema struct {
-	once sync.Once
 	*schema.Encoder
 }
 
 var _ SchemaEncoder = (*DefaultSchema)(nil)
 
+var defaultSchemaEncoder = sync.OnceValue(schema.NewEncoder)
+
 func (d *DefaultSchema) Encode(src any) (url.Values, error) {
-	if d.Encoder == nil {
-		d.once.Do(func() {
-			d.Encoder = schema.NewEncoder()
-		})
+	encoder := d.Encoder
+	if encoder == nil {
+		encoder = defaultSchemaEncoder()
 	}
 
-	var v = url.Values{}
-	return v, d.Encoder.Encode(src, v)
+	v := url.Values{}
+	return v, encoder.Encode(src, v)
 }

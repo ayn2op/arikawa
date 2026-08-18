@@ -123,14 +123,10 @@ func (h *Handler) ChanFor(fn func(any) bool) (out <-chan any, cancel func()) {
 		}
 	})
 
-	// Only allow cancel to be called once.
-	var once sync.Once
-	cancel = func() {
-		once.Do(func() {
-			removeHandler()
-			close(closer)
-		})
-	}
+	cancel = sync.OnceFunc(func() {
+		removeHandler()
+		close(closer)
+	})
 	out = result
 
 	return

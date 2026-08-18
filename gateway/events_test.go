@@ -89,22 +89,26 @@ func TestRequestGuildMembersCommand(t *testing.T) {
 }
 
 func TestReadyEventCapabilities(t *testing.T) {
-	capabilities := UserSettingsProto | DedupeUserObjects
+	capabilities := UserSettingsProto | DedupeUserObjects | AuthTokenRefresh
 	unmarshalers := NewOpUnmarshalers(capabilities)
 	ready := unmarshalers.Lookup(0, "READY")().(*ReadyEvent)
-	if err := json.Unmarshal([]byte(`{}`), ready); err != nil {
+	if err := json.Unmarshal([]byte(`{"auth_token":"new"}`), ready); err != nil {
 		t.Fatal("failed to unmarshal READY:", err)
 	}
 	if ready.Capabilities != capabilities {
 		t.Fatalf("unexpected capabilities: %d", ready.Capabilities)
 	}
+	if ready.AuthToken != "new" {
+		t.Fatalf("unexpected auth token: %q", ready.AuthToken)
+	}
+
+	ready = NewOpUnmarshalers(0).Lookup(0, "READY")().(*ReadyEvent)
+	if err := json.Unmarshal([]byte(`{"auth_token":"new"}`), ready); err != nil || ready.AuthToken != "" {
+		t.Fatalf("auth token decoded without capability: %q (%v)", ready.AuthToken, err)
+	}
 }
 
 func TestReadyEventVersionedFields(t *testing.T) {
-	keepRaw := ReadyEventKeepRaw
-	ReadyEventKeepRaw = true
-	defer func() { ReadyEventKeepRaw = keepRaw }()
-
 	tests := []struct {
 		name         string
 		capabilities Capabilities
@@ -136,12 +140,6 @@ func TestReadyEventVersionedFields(t *testing.T) {
 			if err := json.Unmarshal([]byte(test.payload), ready); err != nil {
 				t.Fatal("failed to unmarshal READY:", err)
 			}
-			if len(ready.ExtrasDecodeErrors) != 0 {
-				t.Fatalf("unexpected extras decode errors: %v", ready.ExtrasDecodeErrors)
-			}
-			if string(ready.RawEventBody) != test.payload {
-				t.Fatal("raw event body was modified")
-			}
 			if len(ready.ReadStates) != 1 || ready.ReadStates[0].ChannelID != 2 {
 				t.Fatalf("unexpected read states: %#v", ready.ReadStates)
 			}
@@ -149,5 +147,22 @@ func TestReadyEventVersionedFields(t *testing.T) {
 				t.Fatalf("unexpected user guild settings: %#v", ready.UserGuildSettings)
 			}
 		})
+	}
+}
+
+func TestReadyEventPrivateChannelRecipients(t *testing.T) {
+	ready := NewOpUnmarshalers(DedupeUserObjects).Lookup(0, "READY")().(*ReadyEvent)
+	payload := []byte(`{
+		"user": {"id": "1"},
+		"users": [{"id": "3", "username": "friend"}],
+		"private_channels": [{"id": "2", "recipient_ids": ["3"]}]
+	}`)
+	if err := json.Unmarshal(payload, ready); err != nil {
+		t.Fatal("failed to unmarshal READY:", err)
+	}
+
+	recipients := ready.PrivateChannels[0].DMRecipients
+	if len(recipients) != 1 || recipients[0].ID != 3 || recipients[0].Username != "friend" {
+		t.Fatalf("unexpected recipients: %#v", recipients)
 	}
 }

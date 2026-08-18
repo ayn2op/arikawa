@@ -16,6 +16,7 @@ func New() *store.Cabinet {
 		MessageStore:    NewMessage(100),
 		PresenceStore:   NewPresence(),
 		RoleStore:       NewRole(),
+		UserStore:       NewUser(),
 		VoiceStateStore: NewVoiceState(),
 	}
 }

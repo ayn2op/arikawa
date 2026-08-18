@@ -85,8 +85,14 @@ func (s *State) onEvent(iface any) {
 		if err := s.Cabinet.MyselfSet(ev.User, false); err != nil {
 			s.stateErr(err, "failed to set self in Ready")
 		}
+		if err := s.Cabinet.UserSet(ev.Users...); err != nil {
+			s.stateErr(err, "failed to set users in Ready")
+		}
+		s.storeMerged(ev.Guilds, ev.MergedMembers, ev.MergedPresences)
 
 	case *gateway.ReadySupplementalEvent:
+		ready := s.Ready()
+
 		// Handle guilds
 		for _, guild := range ev.Guilds {
 			// Handle guild voice states
@@ -98,31 +104,14 @@ func (s *State) onEvent(iface any) {
 			}
 		}
 
-		friendPresences := gateway.ConvertSupplementalPresences(ev.MergedPresences.Friends)
-		for i := range friendPresences {
-			if err := s.Cabinet.PresenceSet(0, &friendPresences[i], false); err != nil {
-				s.stateErr(err, "failed to set friend presence in Ready Supplemental")
+		s.storeMerged(ready.Guilds, ev.MergedMembers, ev.MergedPresences)
+
+		for i := range ev.LazyPrivateChannels {
+			for j := range ev.LazyPrivateChannels[i].DMRecipients {
+				ev.LazyPrivateChannels[i].DMRecipients[j] = s.cachedUser(ev.LazyPrivateChannels[i].DMRecipients[j].ID)
 			}
-		}
-
-		// Discord uses weird indexing, so we'll need the Guilds slice.
-		ready := s.Ready()
-
-		for i := 0; i < len(ready.Guilds) && i < len(ev.MergedMembers); i++ {
-			guild := ready.Guilds[i]
-
-			members := gateway.ConvertSupplementalMembers(ev.MergedMembers[i])
-			for i := range members {
-				if err := s.Cabinet.MemberSet(guild.ID, &members[i], false); err != nil {
-					s.stateErr(err, "failed to set friend presence in Ready Supplemental")
-				}
-			}
-
-			presences := gateway.ConvertSupplementalPresences(ev.MergedPresences.Guilds[i])
-			for i := range presences {
-				if err := s.Cabinet.PresenceSet(guild.ID, &presences[i], false); err != nil {
-					s.stateErr(err, "failed to set member presence in Ready Supplemental")
-				}
+			if err := s.Cabinet.ChannelSet(&ev.LazyPrivateChannels[i], false); err != nil {
+				s.stateErr(err, "failed to set channel in Ready Supplemental")
 			}
 		}
 
@@ -383,6 +372,45 @@ func (s *State) onEvent(iface any) {
 			}
 		}
 	}
+}
+
+func (s *State) storeMerged(guilds []gateway.GuildCreateEvent, mergedMembers [][]gateway.SupplementalMember, mergedPresences gateway.MergedPresences) {
+	for i := range guilds {
+		if i < len(mergedMembers) {
+			members := gateway.ConvertSupplementalMembers(mergedMembers[i])
+			for j := range members {
+				members[j].User = s.cachedUser(members[j].User.ID)
+				if err := s.Cabinet.MemberSet(guilds[i].ID, &members[j], false); err != nil {
+					s.stateErr(err, "failed to set merged member")
+				}
+			}
+		}
+
+		if i < len(mergedPresences.Guilds) {
+			presences := gateway.ConvertSupplementalPresences(mergedPresences.Guilds[i])
+			for j := range presences {
+				presences[j].User = s.cachedUser(presences[j].User.ID)
+				if err := s.Cabinet.PresenceSet(guilds[i].ID, &presences[j], false); err != nil {
+					s.stateErr(err, "failed to set merged presence")
+				}
+			}
+		}
+	}
+
+	friends := gateway.ConvertSupplementalPresences(mergedPresences.Friends)
+	for i := range friends {
+		friends[i].User = s.cachedUser(friends[i].User.ID)
+		if err := s.Cabinet.PresenceSet(0, &friends[i], false); err != nil {
+			s.stateErr(err, "failed to set merged friend presence")
+		}
+	}
+}
+
+func (s *State) cachedUser(id discord.UserID) discord.User {
+	if user, err := s.Cabinet.User(id); err == nil {
+		return *user
+	}
+	return discord.User{ID: id}
 }
 
 func (s *State) stateErr(err error, wrap string) {

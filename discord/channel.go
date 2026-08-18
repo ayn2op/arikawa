@@ -136,8 +136,19 @@ type Channel struct {
 
 func (ch *Channel) UnmarshalJSON(data []byte) error {
 	type RawChannel Channel
-	if err := json.Unmarshal(data, (*RawChannel)(ch)); err != nil {
+	var raw struct {
+		*RawChannel
+		RecipientIDs []UserID `json:"recipient_ids"`
+	}
+	raw.RawChannel = (*RawChannel)(ch)
+	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
+	}
+	if len(ch.DMRecipients) == 0 && len(raw.RecipientIDs) > 0 {
+		ch.DMRecipients = make([]User, len(raw.RecipientIDs))
+		for i, id := range raw.RecipientIDs {
+			ch.DMRecipients[i].ID = id
+		}
 	}
 
 	// In the docs, Discord states that if VideoQualityMode is omitted, it is

@@ -40,10 +40,7 @@ type Session struct {
 	// console.
 	OnInteractionError func(*gateway.InteractionCreateEvent, error)
 
-	// DontWaitForReady makes Open not wait for the Ready event. This is useful
-	// for non-bots, since Discord may send over a READY_SUPPLEMENT instead. If
-	// this is true, then any event sent by Discord will unblock Open (usually
-	// HELLO).
+	// DontWaitForReady makes Open return after the first event (usually HELLO).
 	DontWaitForReady bool // false
 }
 
@@ -130,7 +127,7 @@ func newCustom(
 	h *handler.Handler,
 	g *gateway.Gateway) *Session {
 
-	return &Session{
+	s := &Session{
 		Client:  cl,
 		Handler: h,
 		state: &sessionState{
@@ -144,6 +141,12 @@ func newCustom(
 			log.Printf("session: error handling interaction %v: %v", ev.ID, err)
 		},
 	}
+	h.AddSyncHandler(func(ev *gateway.ReadyEvent) {
+		if ev.AuthToken != "" {
+			s.Client.Session.Token = ev.AuthToken
+		}
+	})
+	return s
 }
 
 // AddIntents adds the given intents into the gateway. Calling it after Open has
@@ -322,7 +325,11 @@ func (s *Session) Open(ctx context.Context) error {
 			}
 
 			switch ev.(type) {
-			case *gateway.ReadyEvent, *gateway.ResumedEvent:
+			case *gateway.ReadyEvent:
+				if s.state.id.Capabilities&gateway.PrioritizedReadyPayload == 0 {
+					return nil
+				}
+			case *gateway.ReadySupplementalEvent, *gateway.ResumedEvent:
 				return nil
 			}
 		}

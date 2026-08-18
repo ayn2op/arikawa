@@ -13,10 +13,6 @@ import (
 
 //go:generate go run ../utils/cmd/genevent -o event_methods.go
 
-// ReadyEventKeepRaw, if true, will make the gateway keep a copy of the raw JSON
-// body that makes up the Ready event. This is useful for non-bots.
-var ReadyEventKeepRaw = false
-
 // Event is a type alias for ws.Event. It exists for convenience and describes
 // the same event as any other ws.Event.
 type Event ws.Event
@@ -711,6 +707,7 @@ type ReadyEvent struct {
 
 	PrivateChannels []discord.Channel  `json:"private_channels"`
 	Guilds          []GuildCreateEvent `json:"guilds"`
+	Users           []discord.User     `json:"users"`
 
 	Shard *Shard `json:"shard,omitempty"`
 
@@ -725,8 +722,6 @@ type ReadyEvent struct {
 }
 
 func (r *ReadyEvent) UnmarshalJSON(b []byte) error {
-	rawEventBody := b
-
 	type raw ReadyEvent
 	if err := json.Unmarshal(b, (*raw)(r)); err != nil {
 		return err
@@ -734,25 +729,50 @@ func (r *ReadyEvent) UnmarshalJSON(b []byte) error {
 
 	// Optionally unmarshal ReadyEventExtras.
 	if !r.User.Bot {
-		var err error
-		if r.Capabilities&VersionedReadStates != 0 {
-			b, err = extractVersioned(b, "read_state", &r.ReadStates)
-		}
-		if err == nil && r.Capabilities&VersionedUserGuildSetttings != 0 {
-			b, err = extractVersioned(b, "user_guild_settings", &r.UserGuildSettings)
-		}
-		if err != nil {
+		extras := struct {
+			*ReadyEventExtras
+			ReadStates        json.Raw `json:"read_state"`
+			UserGuildSettings json.Raw `json:"user_guild_settings"`
+		}{ReadyEventExtras: &r.ReadyEventExtras}
+		if err := json.Unmarshal(b, &extras); err != nil {
 			return err
 		}
-
-		r.ExtrasDecodeErrors = json.PartialUnmarshal(b, &r.ReadyEventExtras)
+		if err := decodeReadyField(extras.ReadStates, r.Capabilities&VersionedReadStates != 0, &r.ReadStates); err != nil {
+			return err
+		}
+		if err := decodeReadyField(extras.UserGuildSettings, r.Capabilities&VersionedUserGuildSetttings != 0, &r.UserGuildSettings); err != nil {
+			return err
+		}
+		if r.Capabilities&AuthTokenRefresh == 0 {
+			r.AuthToken = ""
+		}
 	}
-
-	if ReadyEventKeepRaw {
-		r.ReadyEventExtras.RawEventBody = append([]byte(nil), rawEventBody...)
+	if r.Capabilities&DedupeUserObjects != 0 {
+		r.hydrateUsers()
 	}
 
 	return nil
+}
+
+func (r *ReadyEvent) hydrateUsers() {
+	users := make(map[discord.UserID]discord.User, len(r.Users))
+	for _, user := range r.Users {
+		users[user.ID] = user
+	}
+
+	for i := range r.PrivateChannels {
+		for j := range r.PrivateChannels[i].DMRecipients {
+			id := r.PrivateChannels[i].DMRecipients[j].ID
+			if user, ok := users[id]; ok {
+				r.PrivateChannels[i].DMRecipients[j] = user
+			}
+		}
+	}
+	for i := range r.Relationships {
+		if user, ok := users[r.Relationships[i].UserID]; ok {
+			r.Relationships[i].User = user
+		}
+	}
 }
 
 // Versioned is a generic object used to represent versioned data. Specific
@@ -768,24 +788,17 @@ type Versioned[T any] struct {
 	Version int64 `json:"version"`
 }
 
-func extractVersioned[T any](b []byte, name string, entries *[]T) ([]byte, error) {
-	var fields map[string]json.Raw
-	if err := json.Unmarshal(b, &fields); err != nil {
-		return nil, err
+func decodeReadyField[T any](raw json.Raw, versioned bool, entries *[]T) error {
+	if !versioned {
+		return raw.UnmarshalTo(entries)
 	}
 
-	field, ok := fields[name]
-	if !ok {
-		return b, nil
+	var value Versioned[T]
+	if err := raw.UnmarshalTo(&value); err != nil {
+		return err
 	}
-	delete(fields, name)
-
-	var versioned Versioned[T]
-	if err := json.Unmarshal(field, &versioned); err != nil {
-		return nil, err
-	}
-	*entries = versioned.Entries
-	return json.Marshal(fields)
+	*entries = value.Entries
+	return nil
 }
 
 // Ready subtypes.
@@ -794,24 +807,21 @@ type (
 	// event. This is the only event that receives this special treatment,
 	// because it's the one with the most undocumented things.
 	ReadyEventExtras struct {
-		UserSettings      *UserSettings          `json:"user_settings,omitempty"`
-		ReadStates        []ReadState            `json:"read_state,omitempty"`
-		UserGuildSettings []UserGuildSetting     `json:"user_guild_settings,omitempty"`
-		Relationships     []discord.Relationship `json:"relationships,omitempty"`
-		Presences         []discord.Presence     `json:"presences,omitempty"`
+		ReadStates        []ReadState        `json:"read_state,omitempty"`
+		UserGuildSettings []UserGuildSetting `json:"user_guild_settings,omitempty"`
 
+		UserSettings    *UserSettings             `json:"user_settings,omitempty"`
+		Relationships   []discord.Relationship    `json:"relationships,omitempty"`
+		Presences       []discord.Presence        `json:"presences,omitempty"`
+		MergedMembers   [][]SupplementalMember    `json:"merged_members,omitempty"`
+		MergedPresences MergedPresences           `json:"merged_presences,omitempty"`
+		Notes           map[discord.UserID]string `json:"notes"`
+
+		AuthToken string        `json:"auth_token,omitempty"`
 		Sessions  []UserSession `json:"sessions,omitempty"`
-		SessionID string        `json:"session_id,omitempty"`
 
 		FriendSuggestionCount int      `json:"friend_suggestion_count,omitempty"`
 		GeoOrderedRTCRegions  []string `json:"geo_ordered_rtc_regions,omitempty"`
-
-		// RawEventBody is the raw JSON body for the Ready event. It is only
-		// available if ReadyEventKeepRaw is true.
-		RawEventBody json.Raw
-		// ExtrasDecodeErrors will be non-nil if there were errors decoding the
-		// ReadyEventExtras.
-		ExtrasDecodeErrors []error
 	}
 
 	UserSession struct {
@@ -993,17 +1003,22 @@ func (g GuildFolderID) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.FormatInt(int64(g), 10)), nil
 }
 
-// ReadySupplementalEvent is a dispatch event for READY_SUPPLEMENTAL. It is an
-// undocumented event. For now, this event is never used, and its usage have yet
-// been discovered.
+// ReadySupplementalEvent is a dispatch event for READY_SUPPLEMENTAL.
 type ReadySupplementalEvent struct {
-	Guilds          []GuildCreateEvent     `json:"guilds"` // only have ID and VoiceStates
-	MergedMembers   [][]SupplementalMember `json:"merged_members"`
-	MergedPresences MergedPresences        `json:"merged_presences"`
+	Guilds              []SupplementalGuild    `json:"guilds"`
+	MergedMembers       [][]SupplementalMember `json:"merged_members"`
+	MergedPresences     MergedPresences        `json:"merged_presences"`
+	LazyPrivateChannels []discord.Channel      `json:"lazy_private_channels"`
+	Disclose            []string               `json:"disclose"`
 }
 
 // ReadySupplemental event structs.
 type (
+	SupplementalGuild struct {
+		ID          discord.GuildID      `json:"id"`
+		VoiceStates []discord.VoiceState `json:"voice_states"`
+	}
+
 	// SupplementalMember is the struct for a member in the MergedMembers field
 	// of ReadySupplementalEvent. It has slight differences to discord.Member.
 	SupplementalMember struct {

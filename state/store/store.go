@@ -57,6 +57,7 @@ type Cabinet struct {
 	MessageStore
 	PresenceStore
 	RoleStore
+	UserStore
 	VoiceStateStore
 }
 
@@ -71,6 +72,7 @@ func (sc *Cabinet) Reset() error {
 		sc.MessageStore.Reset(),
 		sc.PresenceStore.Reset(),
 		sc.RoleStore.Reset(),
+		sc.UserStore.Reset(),
 		sc.VoiceStateStore.Reset(),
 	}
 
@@ -131,6 +133,7 @@ var NoopCabinet = &Cabinet{
 	MessageStore:    Noop,
 	PresenceStore:   Noop,
 	RoleStore:       Noop,
+	UserStore:       Noop,
 	VoiceStateStore: Noop,
 }
 
@@ -163,6 +166,19 @@ type MeStore interface {
 
 func (noop) Me() (*discord.User, error)         { return nil, ErrNotFound }
 func (noop) MyselfSet(discord.User, bool) error { return nil }
+
+// UserStore is the store interface for users received from the Gateway.
+type UserStore interface {
+	Resetter
+
+	User(discord.UserID) (*discord.User, error)
+	UserSet(...discord.User) error
+}
+
+var _ UserStore = (*noop)(nil)
+
+func (noop) User(discord.UserID) (*discord.User, error) { return nil, ErrNotFound }
+func (noop) UserSet(...discord.User) error              { return nil }
 
 // ChannelStore is the store interface for all channels.
 type ChannelStore interface {

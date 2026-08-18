@@ -9,6 +9,14 @@ import (
 	"github.com/ayn2op/arikawa/v3/internal/testenv"
 )
 
+func TestAuthTokenRefresh(t *testing.T) {
+	s := New("old")
+	s.Handler.Call(&gateway.ReadyEvent{ReadyEventExtras: gateway.ReadyEventExtras{AuthToken: "new"}})
+	if s.Client.Session.Token != "new" {
+		t.Fatalf("unexpected token: %q", s.Client.Session.Token)
+	}
+}
+
 func TestSession(t *testing.T) {
 	attempts := 1
 	timeout := 45 * time.Second

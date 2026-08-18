@@ -433,6 +433,9 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 
 	case *ReadyEvent:
 		g.state.SessionID = data.SessionID
+		if data.AuthToken != "" {
+			g.state.Identifier.Token = data.AuthToken
+		}
 		g.useLastSentBeat()
 
 	case *ResumedEvent:

@@ -106,7 +106,7 @@ func (s *Message) MessageSet(message *discord.Message, update bool) error {
 			copy(msgs.messages[1:], msgs.messages)
 			msgs.messages[0] = *message
 		} else {
-			msgs.messages = append([]discord.Message{*message}, msgs.messages...)
+			msgs.messages = slices.Insert(msgs.messages, 0, *message)
 		}
 	} else if pos > 0 && len(msgs.messages) < s.maxMsgs {
 		msgs.messages = append(msgs.messages, *message)

@@ -701,6 +701,9 @@ type ConversationSummary struct {
 //
 // https://discord.com/developers/docs/topics/gateway#ready
 type ReadyEvent struct {
+	// Capabilities are the capabilities sent with Identify and are not part of the Ready payload.
+	Capabilities Capabilities `json:"-"`
+
 	Version int `json:"v"`
 
 	User      discord.User `json:"user"`

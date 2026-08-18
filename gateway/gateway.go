@@ -169,8 +169,21 @@ func NewFromState(gatewayURL string, state State, opts *ws.GatewayOpts) *Gateway
 		opts = &DefaultGatewayOpts
 	}
 
-	gw := ws.NewGateway(ws.NewWebsocket(ws.NewCodec(OpUnmarshalers), gatewayURL), opts)
+	gw := ws.NewGateway(ws.NewWebsocket(ws.NewCodec(NewOpUnmarshalers(state.Identifier.Capabilities)), gatewayURL), opts)
 	return FromWebsocketGateway(gw, state)
+}
+
+// NewOpUnmarshalers returns an event registry configured with the capabilities sent with Identify.
+func NewOpUnmarshalers(capabilities Capabilities) ws.OpUnmarshalers {
+	unmarshalers := ws.NewOpUnmarshalers()
+	OpUnmarshalers.Each(func(_ ws.OpCode, _ ws.EventType, fn ws.OpFunc) bool {
+		unmarshalers.Add(fn)
+		return false
+	})
+	unmarshalers.Add(func() ws.Event {
+		return &ReadyEvent{Capabilities: capabilities}
+	})
+	return unmarshalers
 }
 
 // FromWebsocketGateway wraps the given Websocket Gateway into a Gateway

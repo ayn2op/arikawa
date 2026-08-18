@@ -87,3 +87,15 @@ func TestRequestGuildMembersCommand(t *testing.T) {
 		}
 	})
 }
+
+func TestReadyEventCapabilities(t *testing.T) {
+	capabilities := UserSettingsProto | DedupeUserObjects
+	unmarshalers := NewOpUnmarshalers(capabilities)
+	ready := unmarshalers.Lookup(0, "READY")().(*ReadyEvent)
+	if err := json.Unmarshal([]byte(`{}`), ready); err != nil {
+		t.Fatal("failed to unmarshal READY:", err)
+	}
+	if ready.Capabilities != capabilities {
+		t.Fatalf("unexpected capabilities: %d", ready.Capabilities)
+	}
+}

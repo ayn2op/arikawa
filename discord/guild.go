@@ -1,7 +1,8 @@
 package discord
 
 import (
-	"sort"
+	"cmp"
+	"slices"
 	"time"
 )
 
@@ -370,8 +371,8 @@ func (r Role) IconURLWithType(t ImageType) string {
 // Roles with a higher position will be first in the slice, similar to how
 // Discord sorts roles in the client.
 func SortRolesByPosition(roles []Role) {
-	sort.Slice(roles, func(i, j int) bool {
-		return roles[i].Position > roles[j].Position
+	slices.SortFunc(roles, func(a, b Role) int {
+		return cmp.Compare(b.Position, a.Position)
 	})
 }
 

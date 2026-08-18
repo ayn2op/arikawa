@@ -51,6 +51,7 @@ func init() {
 		func() ws.Event { return new(MessageDeleteEvent) },
 		func() ws.Event { return new(MessageDeleteBulkEvent) },
 		func() ws.Event { return new(MessageReactionAddEvent) },
+		func() ws.Event { return new(MessageReactionAddManyEvent) },
 		func() ws.Event { return new(MessageReactionRemoveEvent) },
 		func() ws.Event { return new(MessageReactionRemoveAllEvent) },
 		func() ws.Event { return new(MessageReactionRemoveEmojiEvent) },
@@ -350,6 +351,12 @@ func (*MessageReactionAddEvent) Op() ws.OpCode { return dispatchOp }
 
 // EventType implements Event.
 func (*MessageReactionAddEvent) EventType() ws.EventType { return "MESSAGE_REACTION_ADD" }
+
+// Op implements Event. It always returns 0.
+func (*MessageReactionAddManyEvent) Op() ws.OpCode { return dispatchOp }
+
+// EventType implements Event.
+func (*MessageReactionAddManyEvent) EventType() ws.EventType { return "MESSAGE_REACTION_ADD_MANY" }
 
 // Op implements Event. It always returns 0.
 func (*MessageReactionRemoveEvent) Op() ws.OpCode { return dispatchOp }

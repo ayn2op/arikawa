@@ -526,14 +526,29 @@ type MessageDeleteBulkEvent struct {
 //
 // https://discord.com/developers/docs/topics/gateway#messages
 type MessageReactionAddEvent struct {
-	UserID    discord.UserID    `json:"user_id"`
-	ChannelID discord.ChannelID `json:"channel_id"`
-	MessageID discord.MessageID `json:"message_id"`
+	UserID          discord.UserID    `json:"user_id"`
+	ChannelID       discord.ChannelID `json:"channel_id"`
+	MessageID       discord.MessageID `json:"message_id"`
+	MessageAuthorID discord.UserID    `json:"message_author_id"`
 
-	Emoji discord.Emoji `json:"emoji,omitzero"`
+	Emoji       discord.Emoji `json:"emoji,omitzero"`
+	BurstColors []string      `json:"burst_colors,omitempty"`
 
 	GuildID discord.GuildID `json:"guild_id,omitempty"`
 	Member  *discord.Member `json:"member,omitempty"`
+}
+
+// MessageReactionAddManyEvent is a dispatch event.
+type MessageReactionAddManyEvent struct {
+	ChannelID discord.ChannelID   `json:"channel_id"`
+	MessageID discord.MessageID   `json:"message_id"`
+	GuildID   discord.GuildID     `json:"guild_id,omitempty"`
+	Reactions []DebouncedReaction `json:"reactions"`
+}
+
+type DebouncedReaction struct {
+	Users []discord.UserID `json:"users"`
+	Emoji discord.Emoji    `json:"emoji"`
 }
 
 // MessageReactionRemoveEvent is a dispatch event.

@@ -2,6 +2,7 @@ package state
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/ayn2op/arikawa/v3/discord"
 	"github.com/ayn2op/arikawa/v3/gateway"
@@ -262,29 +263,14 @@ func (s *State) onEvent(iface any) {
 		}
 
 	case *gateway.MessageReactionAddEvent:
-		var me bool
-		if u, _ := s.Cabinet.Me(); u != nil {
-			me = ev.UserID == u.ID
-		}
+		me, _ := s.Cabinet.Me()
+		s.addReaction(ev.ChannelID, ev.MessageID, ev.Emoji, 1, me != nil && ev.UserID == me.ID)
 
-		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
-			if i := findReaction(m.Reactions, ev.Emoji); i > -1 {
-				// Copy the reactions slice so it's not racy.
-				m.Reactions = append([]discord.Reaction(nil), m.Reactions...)
-				m.Reactions[i].Count++
-				m.Reactions[i].Me = m.Reactions[i].Me || me
-			} else {
-				old := m.Reactions
-				m.Reactions = make([]discord.Reaction, 0, len(old)+1)
-				m.Reactions = append(m.Reactions, old...)
-				m.Reactions = append(m.Reactions, discord.Reaction{
-					Count: 1,
-					Me:    me,
-					Emoji: ev.Emoji,
-				})
-			}
-			return true
-		})
+	case *gateway.MessageReactionAddManyEvent:
+		me, _ := s.Cabinet.Me()
+		for _, reaction := range ev.Reactions {
+			s.addReaction(ev.ChannelID, ev.MessageID, reaction.Emoji, len(reaction.Users), me != nil && slices.Contains(reaction.Users, me.ID))
+		}
 
 	case *gateway.MessageReactionRemoveEvent:
 		s.editMessage(ev.ChannelID, ev.MessageID, func(m *discord.Message) bool {
@@ -424,6 +410,20 @@ func (s *State) batchLog(errors []error) {
 }
 
 // Helper functions
+
+func (s *State) addReaction(channelID discord.ChannelID, messageID discord.MessageID, emoji discord.Emoji, count int, me bool) {
+	s.editMessage(channelID, messageID, func(m *discord.Message) bool {
+		m.Reactions = append([]discord.Reaction(nil), m.Reactions...)
+		i := findReaction(m.Reactions, emoji)
+		if i < 0 {
+			m.Reactions = append(m.Reactions, discord.Reaction{Count: count, Me: me, Emoji: emoji})
+		} else {
+			m.Reactions[i].Count += count
+			m.Reactions[i].Me = m.Reactions[i].Me || me
+		}
+		return true
+	})
+}
 
 func (s *State) editMessage(ch discord.ChannelID, msg discord.MessageID, fn func(m *discord.Message) bool) {
 	m, err := s.Cabinet.Message(ch, msg)

@@ -5,7 +5,6 @@ import (
 	"net/url"
 
 	"github.com/ayn2op/arikawa/v3/discord" // for clarity
-	"github.com/ayn2op/arikawa/v3/internal/intmath"
 	"github.com/ayn2op/arikawa/v3/utils/httputil"
 	"github.com/ayn2op/arikawa/v3/utils/json/option"
 )
@@ -219,8 +218,8 @@ func (c *Client) GuildsBefore(data GuildsBeforeData) ([]discord.Guild, error) {
 	for data.Limit > 0 || unlimited {
 		if data.Limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch intmath.Min(fetch, limit).
-			fetch = uint(intmath.Min(MaxGuildFetchLimit, int(data.Limit)))
+			// we only need to fetch min(fetch, limit).
+			fetch = uint(min(MaxGuildFetchLimit, int(data.Limit)))
 			data.Limit -= fetch
 		}
 
@@ -266,8 +265,8 @@ func (c *Client) GuildsAfter(data GuildsAfterData) ([]discord.Guild, error) {
 	for data.Limit > 0 || unlimited {
 		if data.Limit > 0 {
 			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch intmath.Min(fetch, limit).
-			fetch = uint(intmath.Min(MaxGuildFetchLimit, int(data.Limit)))
+			// we only need to fetch min(fetch, limit).
+			fetch = uint(min(MaxGuildFetchLimit, int(data.Limit)))
 			data.Limit -= fetch
 		}
 

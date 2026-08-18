@@ -57,12 +57,5 @@ func (i *Inflator) Flush() ([]byte, error) {
 		return nil, fmt.Errorf("failed to read from FLATE reader: %w", err)
 	}
 
-	// Copy the bytes.
-	return bytecopy(i.rbuf.Bytes()), nil
-}
-
-func bytecopy(p []byte) []byte {
-	cpy := make([]byte, len(p))
-	copy(cpy, p)
-	return cpy
+	return bytes.Clone(i.rbuf.Bytes()), nil
 }

@@ -615,36 +615,6 @@ func (c *Client) JoinedPrivateArchivedThreads(
 	)
 }
 
-// PublicArchivedThreadsBefore returns archived threads in the channel that are
-// public.
-//
-// Deprecated: Use PublicArchivedThreads instead.
-func (c *Client) PublicArchivedThreadsBefore(
-	channelID discord.ChannelID,
-	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
-	return c.PublicArchivedThreads(channelID, before, limit)
-}
-
-// PrivateArchivedThreadsBefore returns archived threads in the channel that
-// are of type GUILD_PRIVATE_THREAD.
-//
-// Deprecated: Use PrivateArchivedThreads instead.
-func (c *Client) PrivateArchivedThreadsBefore(
-	channelID discord.ChannelID,
-	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
-	return c.PrivateArchivedThreads(channelID, before, limit)
-}
-
-// JoinedPrivateArchivedThreadsBefore returns archived threads in the channel
-// that are of type GUILD_PRIVATE_THREAD, and the user has joined.
-//
-// Deprecated: Use JoinedPrivateArchivedThreads instead.
-func (c *Client) JoinedPrivateArchivedThreadsBefore(
-	channelID discord.ChannelID,
-	before discord.Timestamp, limit uint) (*ArchivedThreads, error) {
-	return c.JoinedPrivateArchivedThreads(channelID, before, limit)
-}
-
 type ThreadTagSetting string
 
 const (

@@ -304,11 +304,6 @@ type ComponentInteraction interface {
 	resp()
 }
 
-// SelectInteraction is a select component's response.
-//
-// Deprecated: Use StringSelectInteraction instead.
-type SelectInteraction = StringSelectInteraction
-
 // StringSelectInteraction is a string select component's response.
 type StringSelectInteraction struct {
 	CustomID ComponentID `json:"custom_id"`

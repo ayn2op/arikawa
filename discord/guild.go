@@ -577,31 +577,6 @@ type GuildWidgetSettings struct {
 	ChannelID ChannelID `json:"channel_id,omitempty"`
 }
 
-// MemberColor computes the effective color of the Member, taking into account
-// the role colors.
-//
-// Deprecated: MemberColor relies on Guild, which may not have a []Role if it
-// comes from the state. Use State's MemberColor instead.
-func MemberColor(guild Guild, member Member) (Color, bool) {
-	c := NullColor
-	var pos int
-
-	for _, r := range guild.Roles {
-		for _, mr := range member.RoleIDs {
-			if mr != r.ID {
-				continue
-			}
-
-			if r.Color > 0 && r.Position > pos {
-				c = r.Color
-				pos = r.Position
-			}
-		}
-	}
-
-	return c, c > NullColor
-}
-
 // Presence represents a partial Presence structure used by other structs to be
 // easily embedded. It does not contain any ID to identify who it belongs
 // to. For more information, refer to the PresenceUpdateEvent struct.

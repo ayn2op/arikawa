@@ -249,16 +249,6 @@ const (
 	GuildForum
 )
 
-// GuildNews aliases to GuildAnnouncement.
-//
-// Deprecated: use GuildAnnouncement instead.
-const GuildNews = GuildAnnouncement
-
-// GuildNewsThread aliases to GuildAnnouncementThread.
-//
-// Deprecated: use GuildAnnouncementThread instead.
-const GuildNewsThread = GuildAnnouncementThread
-
 // https://discord.com/developers/docs/resources/channel#overwrite-object
 type Overwrite struct {
 	// ID is the role or user id.

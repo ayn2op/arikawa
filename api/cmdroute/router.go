@@ -139,23 +139,6 @@ func (r *Router) HandleInteraction(ev *discord.InteractionEvent) *api.Interactio
 	}
 }
 
-// HandleCommand implements CommandHandler. It applies middlewares onto the
-// handler to be executed.
-//
-// Deprecated: This function should not be used directly. Use [HandleInteraction]
-// instead. This function now calls HandleInteraction internally.
-func (r *Router) HandleCommand(ev *discord.InteractionEvent, data *discord.CommandInteraction) *api.InteractionResponse {
-	return r.HandleInteraction(ev)
-}
-
-// HandleAutocompletion handles an autocompletion event.
-//
-// Deprecated: This function should not be used directly. Use [HandleInteraction]
-// instead. This function now calls HandleInteraction internally.
-func (r *Router) HandleAutocompletion(ev *discord.InteractionEvent, data *discord.AutocompleteInteraction) *api.InteractionResponse {
-	return r.HandleInteraction(ev)
-}
-
 func (r *Router) callHandler(ev *discord.InteractionEvent, fn InteractionHandlerFunc) *api.InteractionResponse {
 	h := InteractionHandler(fn)
 

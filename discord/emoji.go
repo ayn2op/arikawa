@@ -89,7 +89,7 @@ func (e Emoji) EmojiURLWithType(t ImageType) string {
 
 // APIEmoji represents an emoji identifier string formatted to be used with the
 // API. It is formatted using Emoji's APIString method as well as the
-// NewCustomEmoji function. If the emoji is a stock Unicode emoji, then this
+// NewAPIEmoji function. If the emoji is a stock Unicode emoji, then this
 // string contains it. Otherwise, it is formatted like "emoji_name:123123123",
 // where "123123123" is the emoji ID.
 type APIEmoji string
@@ -100,14 +100,6 @@ func NewAPIEmoji(id EmojiID, name string) APIEmoji {
 		return APIEmoji(name)
 	}
 	return APIEmoji(name + ":" + id.String())
-}
-
-// NewCustomEmoji creates a new Emoji using a custom guild emoji as base.
-// Unicode emojis should be directly converted.
-//
-// Deprecated: Use NewAPIEmoji, it does the same exact thing.
-func NewCustomEmoji(id EmojiID, name string) APIEmoji {
-	return NewAPIEmoji(id, name)
 }
 
 // PathString returns the APIEmoji as a path-encoded string.
@@ -121,7 +113,7 @@ func (e Emoji) APIString() APIEmoji {
 		return APIEmoji(e.Name)
 	}
 
-	return NewCustomEmoji(e.ID, e.Name)
+	return NewAPIEmoji(e.ID, e.Name)
 }
 
 // String formats the string like how the client does.

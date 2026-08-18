@@ -26,18 +26,6 @@ const (
 	ModalResponse
 )
 
-// InteractionResponseFlags implements flags for an
-// InteractionApplicationCommandCallbackData.
-//
-// Deprecated: use discord.MessageFlags instead.
-type InteractionResponseFlags = discord.MessageFlags
-
-// EphemeralMessage specifies whether the message is only visible to the user
-// who invoked the Interaction.
-//
-// Deprecated: use discord.EphemeralMessage instead.
-const EphemeralResponse InteractionResponseFlags = discord.EphemeralMessage
-
 type InteractionResponse struct {
 	Type InteractionResponseType  `json:"type"`
 	Data *InteractionResponseData `json:"data,omitempty"`
@@ -251,15 +239,6 @@ func (c *Client) EditInteractionResponse(
 func (c *Client) DeleteInteractionResponse(appID discord.AppID, token string) error {
 	return c.FastRequest("DELETE",
 		EndpointWebhooks+appID.String()+"/"+token+"/messages/@original")
-}
-
-// CreateInteractionFollowup creates a followup message for an interaction.
-//
-// Deprecated: use FollowUpInteraction instead.
-func (c *Client) CreateInteractionFollowup(
-	appID discord.AppID, token string, data InteractionResponseData) (*discord.Message, error) {
-
-	return c.FollowUpInteraction(appID, token, data)
 }
 
 // FollowUpInteraction creates a followup message for an interaction.

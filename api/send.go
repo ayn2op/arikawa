@@ -86,6 +86,30 @@ func (am AllowedMentions) Verify() error {
 	return nil
 }
 
+func validateMessage(mentions *AllowedMentions, embeds *[]discord.Embed) error {
+	if mentions != nil {
+		if err := mentions.Verify(); err != nil {
+			return fmt.Errorf("allowedMentions error: %w", err)
+		}
+	}
+	if embeds == nil {
+		return nil
+	}
+
+	sum := 0
+	for i, embed := range *embeds {
+		if err := embed.Validate(); err != nil {
+			return fmt.Errorf("embed error at %d: %w", i, err)
+		}
+		sum += embed.Length()
+		if sum > 6000 {
+			return &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
+		}
+		(*embeds)[i] = embed
+	}
+	return nil
+}
+
 // ErrEmptyMessage is returned if either a SendMessageData or an
 // ExecuteWebhookData is missing content, embeds, and files.
 var ErrEmptyMessage = errors.New("message is empty")
@@ -157,23 +181,8 @@ func (c *Client) SendMessageComplex(
 		return nil, ErrEmptyMessage
 	}
 
-	if data.AllowedMentions != nil {
-		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, fmt.Errorf("allowedMentions error: %w", err)
-		}
-	}
-
-	sum := 0
-	for i, embed := range data.Embeds {
-		if err := embed.Validate(); err != nil {
-			return nil, fmt.Errorf("embed error at %d: %w", i, err)
-		}
-		sum += embed.Length()
-		if sum > 6000 {
-			return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
-		}
-
-		data.Embeds[i] = embed // embed.Validate changes fields
+	if err := validateMessage(data.AllowedMentions, &data.Embeds); err != nil {
+		return nil, err
 	}
 
 	var URL = EndpointChannels + channelID.String() + "/messages"

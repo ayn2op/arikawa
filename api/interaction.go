@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"mime/multipart"
 
 	"github.com/ayn2op/arikawa/v3/discord"
@@ -142,25 +141,8 @@ func (c *Client) RespondInteraction(
 			}
 		}
 
-		if resp.Data.AllowedMentions != nil {
-			if err := resp.Data.AllowedMentions.Verify(); err != nil {
-				return fmt.Errorf("allowedMentions error: %w", err)
-			}
-		}
-
-		if resp.Data.Embeds != nil {
-			sum := 0
-			for i, embed := range *resp.Data.Embeds {
-				if err := embed.Validate(); err != nil {
-					return fmt.Errorf("embed error at %d: %w", i, err)
-				}
-				sum += embed.Length()
-				if sum > 6000 {
-					return &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
-				}
-
-				(*resp.Data.Embeds)[i] = embed // embed.Validate changes fields
-			}
+		if err := validateMessage(resp.Data.AllowedMentions, resp.Data.Embeds); err != nil {
+			return err
 		}
 	}
 
@@ -209,25 +191,8 @@ func (c *Client) EditInteractionResponse(
 	appID discord.AppID,
 	token string, data EditInteractionResponseData) (*discord.Message, error) {
 
-	if data.AllowedMentions != nil {
-		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, fmt.Errorf("allowedMentions error: %w", err)
-		}
-	}
-
-	if data.Embeds != nil {
-		sum := 0
-		for i, e := range *data.Embeds {
-			if err := e.Validate(); err != nil {
-				return nil, fmt.Errorf("embed error: %w", err)
-			}
-			sum += e.Length()
-			if sum > 6000 {
-				return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of text in embeds"}
-			}
-
-			(*data.Embeds)[i] = e // e.Validate changes fields
-		}
+	if err := validateMessage(data.AllowedMentions, data.Embeds); err != nil {
+		return nil, err
 	}
 
 	var msg *discord.Message
@@ -251,25 +216,8 @@ func (c *Client) FollowUpInteraction(
 		return nil, ErrEmptyMessage
 	}
 
-	if data.AllowedMentions != nil {
-		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, fmt.Errorf("allowedMentions error: %w", err)
-		}
-	}
-
-	if data.Embeds != nil {
-		sum := 0
-		for i, embed := range *data.Embeds {
-			if err := embed.Validate(); err != nil {
-				return nil, fmt.Errorf("embed error at %d: %w", i, err)
-			}
-			sum += embed.Length()
-			if sum > 6000 {
-				return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
-			}
-
-			(*data.Embeds)[i] = embed // embed.Validate changes fields
-		}
+	if err := validateMessage(data.AllowedMentions, data.Embeds); err != nil {
+		return nil, err
 	}
 
 	var msg *discord.Message
@@ -281,25 +229,8 @@ func (c *Client) EditInteractionFollowup(
 	appID discord.AppID, messageID discord.MessageID,
 	token string, data EditInteractionResponseData) (*discord.Message, error) {
 
-	if data.AllowedMentions != nil {
-		if err := data.AllowedMentions.Verify(); err != nil {
-			return nil, fmt.Errorf("allowedMentions error: %w", err)
-		}
-	}
-
-	if data.Embeds != nil {
-		sum := 0
-		for i, e := range *data.Embeds {
-			if err := e.Validate(); err != nil {
-				return nil, fmt.Errorf("embed error: %w", err)
-			}
-			sum += e.Length()
-			if sum > 6000 {
-				return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of text in embeds"}
-			}
-
-			(*data.Embeds)[i] = e // e.Validate changes fields
-		}
+	if err := validateMessage(data.AllowedMentions, data.Embeds); err != nil {
+		return nil, err
 	}
 
 	var msg *discord.Message

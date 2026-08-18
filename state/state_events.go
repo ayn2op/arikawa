@@ -401,7 +401,7 @@ func (s *State) batchLog(errors []error) {
 
 func (s *State) addReaction(channelID discord.ChannelID, messageID discord.MessageID, emoji discord.Emoji, count int, me bool) {
 	s.editMessage(channelID, messageID, func(m *discord.Message) bool {
-		m.Reactions = append([]discord.Reaction(nil), m.Reactions...)
+		m.Reactions = slices.Clone(m.Reactions)
 		i := findReaction(m.Reactions, emoji)
 		if i < 0 {
 			m.Reactions = append(m.Reactions, discord.Reaction{Count: count, Me: me, Emoji: emoji})

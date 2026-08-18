@@ -63,7 +63,7 @@ func (s *Message) Messages(channelID discord.ChannelID) ([]discord.Message, erro
 	msgs.mut.RLock()
 	defer msgs.mut.RUnlock()
 
-	return append([]discord.Message(nil), msgs.messages...), nil
+	return slices.Clone(msgs.messages), nil
 }
 
 func (s *Message) MaxMessages() int {

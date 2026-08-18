@@ -372,7 +372,7 @@ func (ctx *Context) RegisterSubcommand(cmd any, names ...string) (*Subcommand, e
 
 	if len(names) > 1 {
 		// Copy the slice for expected behaviors.
-		s.Aliases = append([]string(nil), names[1:]...)
+		s.Aliases = slices.Clone(names[1:])
 	}
 
 	if err := s.InitCommands(ctx); err != nil {

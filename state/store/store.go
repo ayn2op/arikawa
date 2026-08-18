@@ -35,7 +35,6 @@ package store
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/ayn2op/arikawa/v3/discord"
 )
@@ -63,7 +62,7 @@ type Cabinet struct {
 
 // Reset resets everything inside the container.
 func (sc *Cabinet) Reset() error {
-	errors := []error{
+	return errors.Join(
 		sc.MeStore.Reset(),
 		sc.ChannelStore.Reset(),
 		sc.EmojiStore.Reset(),
@@ -74,38 +73,7 @@ func (sc *Cabinet) Reset() error {
 		sc.RoleStore.Reset(),
 		sc.UserStore.Reset(),
 		sc.VoiceStateStore.Reset(),
-	}
-
-	nonNils := errors[:0]
-
-	for _, err := range errors {
-		if err != nil {
-			nonNils = append(nonNils, err)
-		}
-	}
-
-	if len(nonNils) > 0 {
-		return ResetErrors(nonNils)
-	}
-
-	return nil
-}
-
-// ResetErrors represents the multiple errors when StoreContainer is being
-// resetted. A ResetErrors value must have at least 1 error.
-type ResetErrors []error
-
-// Error formats ResetErrors, showing the number of errors and the last error.
-func (errs ResetErrors) Error() string {
-	return fmt.Sprintf(
-		"encountered %d reset errors (last: %v)",
-		len(errs), errs[len(errs)-1],
 	)
-}
-
-// Unwrap returns the last error in the list.
-func (errs ResetErrors) Unwrap() error {
-	return errs[len(errs)-1]
 }
 
 // Noop is the value for a NoopStore.

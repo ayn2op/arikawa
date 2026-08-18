@@ -65,8 +65,8 @@ func AddGatewayParams(baseURL string) string {
 // across gateways during construction to be used for resuming a connection or
 // starting a new one with the previous data.
 //
-// The data structure itself is not thread-safe, so they may only be pulled from
-// the gateway after it's done and set before it's done.
+// The data structure itself is not thread-safe, so it may only be pulled from
+// the gateway after it's done.
 type State struct {
 	Identifier Identifier
 	SessionID  string
@@ -205,12 +205,6 @@ func (g *Gateway) Opts() *ws.GatewayOpts {
 func (g *Gateway) State() State {
 	g.gateway.AssertIsNotRunning()
 	return g.state
-}
-
-// SetState sets the gateway's state.
-func (g *Gateway) SetState(state State) {
-	g.gateway.AssertIsNotRunning()
-	g.state = state
 }
 
 // AddIntents adds a Gateway Intent before connecting to the Gateway. This

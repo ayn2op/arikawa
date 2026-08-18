@@ -101,11 +101,6 @@ func TestReadyEventCapabilities(t *testing.T) {
 	if ready.AuthToken != "new" {
 		t.Fatalf("unexpected auth token: %q", ready.AuthToken)
 	}
-
-	ready = NewOpUnmarshalers(0).Lookup(0, "READY")().(*ReadyEvent)
-	if err := json.Unmarshal([]byte(`{"auth_token":"new"}`), ready); err != nil || ready.AuthToken != "" {
-		t.Fatalf("auth token decoded without capability: %q (%v)", ready.AuthToken, err)
-	}
 }
 
 func TestReadyEventVersionedFields(t *testing.T) {

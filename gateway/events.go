@@ -743,9 +743,6 @@ func (r *ReadyEvent) UnmarshalJSON(b []byte) error {
 		if err := decodeReadyField(extras.UserGuildSettings, r.Capabilities&VersionedUserGuildSetttings != 0, &r.UserGuildSettings); err != nil {
 			return err
 		}
-		if r.Capabilities&AuthTokenRefresh == 0 {
-			r.AuthToken = ""
-		}
 	}
 	if r.Capabilities&DedupeUserObjects != 0 {
 		r.hydrateUsers()
@@ -814,7 +811,7 @@ type (
 		Relationships   []discord.Relationship    `json:"relationships,omitempty"`
 		Presences       []discord.Presence        `json:"presences,omitempty"`
 		MergedMembers   [][]SupplementalMember    `json:"merged_members,omitempty"`
-		MergedPresences MergedPresences           `json:"merged_presences,omitempty"`
+		MergedPresences MergedPresences           `json:"merged_presences"`
 		Notes           map[discord.UserID]string `json:"notes"`
 
 		AuthToken string        `json:"auth_token,omitempty"`

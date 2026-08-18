@@ -282,10 +282,7 @@ func (s *State) onEvent(iface any) {
 			r := &m.Reactions[i]
 			// If the count is 0:
 			if (r.Count - 1) < 1 {
-				old := m.Reactions
-				m.Reactions = make([]discord.Reaction, len(m.Reactions)-1)
-				copy(m.Reactions[0:], old[:i])
-				copy(m.Reactions[i:], old[i+1:])
+				m.Reactions = slices.Delete(m.Reactions, i, i+1)
 			} else {
 				r.Count--
 				if r.Me { // If reaction removal is the user's
@@ -311,7 +308,7 @@ func (s *State) onEvent(iface any) {
 			if i < 0 {
 				return false
 			}
-			m.Reactions = append(m.Reactions[:i], m.Reactions[i+1:]...)
+			m.Reactions = slices.Delete(m.Reactions, i, i+1)
 			return true
 		})
 

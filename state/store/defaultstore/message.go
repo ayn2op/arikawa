@@ -1,6 +1,7 @@
 package defaultstore
 
 import (
+	"slices"
 	"sync"
 
 	"github.com/ayn2op/arikawa/v3/discord"
@@ -219,7 +220,7 @@ func (s *Message) MessageRemove(channelID discord.ChannelID, messageID discord.M
 
 	for i, m := range msgs.messages {
 		if m.ID == messageID {
-			msgs.messages = append(msgs.messages[:i], msgs.messages[i+1:]...)
+			msgs.messages = slices.Delete(msgs.messages, i, i+1)
 			return nil
 		}
 	}

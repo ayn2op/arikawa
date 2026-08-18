@@ -725,6 +725,8 @@ type ReadyEvent struct {
 }
 
 func (r *ReadyEvent) UnmarshalJSON(b []byte) error {
+	rawEventBody := b
+
 	type raw ReadyEvent
 	if err := json.Unmarshal(b, (*raw)(r)); err != nil {
 		return err
@@ -732,14 +734,58 @@ func (r *ReadyEvent) UnmarshalJSON(b []byte) error {
 
 	// Optionally unmarshal ReadyEventExtras.
 	if !r.User.Bot {
+		var err error
+		if r.Capabilities&VersionedReadStates != 0 {
+			b, err = extractVersioned(b, "read_state", &r.ReadStates)
+		}
+		if err == nil && r.Capabilities&VersionedUserGuildSetttings != 0 {
+			b, err = extractVersioned(b, "user_guild_settings", &r.UserGuildSettings)
+		}
+		if err != nil {
+			return err
+		}
+
 		r.ExtrasDecodeErrors = json.PartialUnmarshal(b, &r.ReadyEventExtras)
 	}
 
 	if ReadyEventKeepRaw {
-		r.ReadyEventExtras.RawEventBody = append([]byte(nil), b...)
+		r.ReadyEventExtras.RawEventBody = append([]byte(nil), rawEventBody...)
 	}
 
 	return nil
+}
+
+// Versioned is a generic object used to represent versioned data. Specific
+// capabilities enable versioning for fields in the Ready event.
+//
+// https://docs.discord.food/gateway/gateway-events#ready
+type Versioned[T any] struct {
+	// Entries contains the versioned objects.
+	Entries []T `json:"entries"`
+	// Partial reports whether Entries contains only part of the data.
+	Partial bool `json:"partial"`
+	// Version is the version of Entries.
+	Version int64 `json:"version"`
+}
+
+func extractVersioned[T any](b []byte, name string, entries *[]T) ([]byte, error) {
+	var fields map[string]json.Raw
+	if err := json.Unmarshal(b, &fields); err != nil {
+		return nil, err
+	}
+
+	field, ok := fields[name]
+	if !ok {
+		return b, nil
+	}
+	delete(fields, name)
+
+	var versioned Versioned[T]
+	if err := json.Unmarshal(field, &versioned); err != nil {
+		return nil, err
+	}
+	*entries = versioned.Entries
+	return json.Marshal(fields)
 }
 
 // Ready subtypes.

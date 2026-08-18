@@ -99,3 +99,55 @@ func TestReadyEventCapabilities(t *testing.T) {
 		t.Fatalf("unexpected capabilities: %d", ready.Capabilities)
 	}
 }
+
+func TestReadyEventVersionedFields(t *testing.T) {
+	keepRaw := ReadyEventKeepRaw
+	ReadyEventKeepRaw = true
+	defer func() { ReadyEventKeepRaw = keepRaw }()
+
+	tests := []struct {
+		name         string
+		capabilities Capabilities
+		payload      string
+	}{
+		{
+			name: "normal",
+			payload: `{
+				"user": {"id": "1"},
+				"read_state": [{"id": "2"}],
+				"user_guild_settings": [{"guild_id": "3"}]
+			}`,
+		},
+		{
+			name:         "versioned",
+			capabilities: VersionedReadStates | VersionedUserGuildSetttings,
+			payload: `{
+				"user": {"id": "1"},
+				"read_state": {"entries": [{"id": "2"}], "partial": false, "version": 4},
+				"user_guild_settings": {"entries": [{"guild_id": "3"}], "partial": true, "version": 5}
+			}`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			unmarshalers := NewOpUnmarshalers(test.capabilities)
+			ready := unmarshalers.Lookup(0, "READY")().(*ReadyEvent)
+			if err := json.Unmarshal([]byte(test.payload), ready); err != nil {
+				t.Fatal("failed to unmarshal READY:", err)
+			}
+			if len(ready.ExtrasDecodeErrors) != 0 {
+				t.Fatalf("unexpected extras decode errors: %v", ready.ExtrasDecodeErrors)
+			}
+			if string(ready.RawEventBody) != test.payload {
+				t.Fatal("raw event body was modified")
+			}
+			if len(ready.ReadStates) != 1 || ready.ReadStates[0].ChannelID != 2 {
+				t.Fatalf("unexpected read states: %#v", ready.ReadStates)
+			}
+			if len(ready.UserGuildSettings) != 1 || ready.UserGuildSettings[0].GuildID != 3 {
+				t.Fatalf("unexpected user guild settings: %#v", ready.UserGuildSettings)
+			}
+		})
+	}
+}

@@ -4,12 +4,11 @@ import (
 	"sync"
 
 	"github.com/ayn2op/arikawa/v3/discord"
-	"github.com/ayn2op/arikawa/v3/internal/moreatomic"
 	"github.com/ayn2op/arikawa/v3/state/store"
 )
 
 type Presence struct {
-	guilds moreatomic.Map
+	guilds *atomicMap[discord.GuildID, *presences]
 }
 
 type presences struct {
@@ -21,7 +20,7 @@ var _ store.PresenceStore = (*Presence)(nil)
 
 func NewPresence() *Presence {
 	return &Presence{
-		guilds: *moreatomic.NewMap(func() any {
+		guilds: newAtomicMap[discord.GuildID](func() *presences {
 			return &presences{
 				presences: make(map[discord.UserID]discord.Presence, 1),
 			}
@@ -30,16 +29,15 @@ func NewPresence() *Presence {
 }
 
 func (s *Presence) Reset() error {
-	return s.guilds.Reset()
+	s.guilds.Reset()
+	return nil
 }
 
 func (s *Presence) Presence(gID discord.GuildID, uID discord.UserID) (*discord.Presence, error) {
-	iv, ok := s.guilds.Load(gID)
+	ps, ok := s.guilds.Load(gID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	ps := iv.(*presences)
 
 	ps.mut.RLock()
 	defer ps.mut.RUnlock()
@@ -53,12 +51,10 @@ func (s *Presence) Presence(gID discord.GuildID, uID discord.UserID) (*discord.P
 }
 
 func (s *Presence) Presences(guildID discord.GuildID) ([]discord.Presence, error) {
-	iv, ok := s.guilds.Load(guildID)
+	ps, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	ps := iv.(*presences)
 
 	ps.mut.RLock()
 	defer ps.mut.RUnlock()
@@ -72,9 +68,7 @@ func (s *Presence) Presences(guildID discord.GuildID) ([]discord.Presence, error
 }
 
 func (s *Presence) PresenceSet(guildID discord.GuildID, p *discord.Presence, update bool) error {
-	iv, _ := s.guilds.LoadOrStore(guildID)
-
-	ps := iv.(*presences)
+	ps, _ := s.guilds.LoadOrStore(guildID)
 
 	ps.mut.Lock()
 	defer ps.mut.Unlock()
@@ -92,12 +86,10 @@ func (s *Presence) PresenceSet(guildID discord.GuildID, p *discord.Presence, upd
 }
 
 func (s *Presence) PresenceRemove(guildID discord.GuildID, userID discord.UserID) error {
-	iv, ok := s.guilds.Load(guildID)
+	ps, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil
 	}
-
-	ps := iv.(*presences)
 
 	ps.mut.Lock()
 	delete(ps.presences, userID)

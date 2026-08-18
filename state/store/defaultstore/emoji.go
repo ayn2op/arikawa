@@ -4,12 +4,11 @@ import (
 	"sync"
 
 	"github.com/ayn2op/arikawa/v3/discord"
-	"github.com/ayn2op/arikawa/v3/internal/moreatomic"
 	"github.com/ayn2op/arikawa/v3/state/store"
 )
 
 type Emoji struct {
-	guilds moreatomic.Map
+	guilds *atomicMap[discord.GuildID, *emojis]
 }
 
 type emojis struct {
@@ -21,7 +20,7 @@ var _ store.EmojiStore = (*Emoji)(nil)
 
 func NewEmoji() *Emoji {
 	return &Emoji{
-		guilds: *moreatomic.NewMap(func() any {
+		guilds: newAtomicMap[discord.GuildID](func() *emojis {
 			return &emojis{
 				emojis: []discord.Emoji{},
 			}
@@ -35,12 +34,10 @@ func (s *Emoji) Reset() error {
 }
 
 func (s *Emoji) Emoji(guildID discord.GuildID, emojiID discord.EmojiID) (*discord.Emoji, error) {
-	iv, ok := s.guilds.Load(guildID)
+	es, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	es := iv.(*emojis)
 
 	es.mut.Lock()
 	defer es.mut.Unlock()
@@ -57,12 +54,10 @@ func (s *Emoji) Emoji(guildID discord.GuildID, emojiID discord.EmojiID) (*discor
 }
 
 func (s *Emoji) Emojis(guildID discord.GuildID) ([]discord.Emoji, error) {
-	iv, ok := s.guilds.Load(guildID)
+	es, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	es := iv.(*emojis)
 
 	es.mut.Lock()
 	defer es.mut.Unlock()
@@ -72,12 +67,10 @@ func (s *Emoji) Emojis(guildID discord.GuildID) ([]discord.Emoji, error) {
 }
 
 func (s *Emoji) EmojiSet(guildID discord.GuildID, allEmojis []discord.Emoji, update bool) error {
-	iv, loaded := s.guilds.LoadOrStore(guildID)
+	es, loaded := s.guilds.LoadOrStore(guildID)
 	if loaded && !update {
 		return nil
 	}
-
-	es := iv.(*emojis)
 
 	es.mut.Lock()
 	es.emojis = allEmojis

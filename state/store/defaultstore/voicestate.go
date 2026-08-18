@@ -4,12 +4,11 @@ import (
 	"sync"
 
 	"github.com/ayn2op/arikawa/v3/discord"
-	"github.com/ayn2op/arikawa/v3/internal/moreatomic"
 	"github.com/ayn2op/arikawa/v3/state/store"
 )
 
 type VoiceState struct {
-	guilds moreatomic.Map
+	guilds *atomicMap[discord.GuildID, *voiceStates]
 }
 
 var _ store.VoiceStateStore = (*VoiceState)(nil)
@@ -21,7 +20,7 @@ type voiceStates struct {
 
 func NewVoiceState() *VoiceState {
 	return &VoiceState{
-		guilds: *moreatomic.NewMap(func() any {
+		guilds: newAtomicMap[discord.GuildID](func() *voiceStates {
 			return &voiceStates{
 				voiceStates: make(map[discord.UserID]discord.VoiceState, 1),
 			}
@@ -30,18 +29,17 @@ func NewVoiceState() *VoiceState {
 }
 
 func (s *VoiceState) Reset() error {
-	return s.guilds.Reset()
+	s.guilds.Reset()
+	return nil
 }
 
 func (s *VoiceState) VoiceState(
 	guildID discord.GuildID, userID discord.UserID) (*discord.VoiceState, error) {
 
-	iv, ok := s.guilds.Load(guildID)
+	vs, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	vs := iv.(*voiceStates)
 
 	vs.mut.RLock()
 	defer vs.mut.RUnlock()
@@ -55,12 +53,10 @@ func (s *VoiceState) VoiceState(
 }
 
 func (s *VoiceState) VoiceStates(guildID discord.GuildID) ([]discord.VoiceState, error) {
-	iv, ok := s.guilds.Load(guildID)
+	vs, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	vs := iv.(*voiceStates)
 
 	vs.mut.RLock()
 	defer vs.mut.RUnlock()
@@ -76,9 +72,7 @@ func (s *VoiceState) VoiceStates(guildID discord.GuildID) ([]discord.VoiceState,
 func (s *VoiceState) VoiceStateSet(
 	guildID discord.GuildID, voiceState *discord.VoiceState, update bool) error {
 
-	iv, _ := s.guilds.LoadOrStore(guildID)
-
-	vs := iv.(*voiceStates)
+	vs, _ := s.guilds.LoadOrStore(guildID)
 
 	vs.mut.Lock()
 	if _, ok := vs.voiceStates[voiceState.UserID]; !ok || update {
@@ -90,12 +84,10 @@ func (s *VoiceState) VoiceStateSet(
 }
 
 func (s *VoiceState) VoiceStateRemove(guildID discord.GuildID, userID discord.UserID) error {
-	iv, ok := s.guilds.Load(guildID)
+	vs, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil
 	}
-
-	vs := iv.(*voiceStates)
 
 	vs.mut.Lock()
 	delete(vs.voiceStates, userID)

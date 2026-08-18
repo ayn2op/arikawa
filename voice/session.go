@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ayn2op/arikawa/v3/discord"
 	"github.com/ayn2op/arikawa/v3/gateway"
-	"github.com/ayn2op/arikawa/v3/internal/moreatomic"
 	"github.com/ayn2op/arikawa/v3/session"
 	"github.com/ayn2op/arikawa/v3/state"
 	"github.com/ayn2op/arikawa/v3/utils/handler"
@@ -95,7 +95,7 @@ type Session struct {
 	// joining determines the behavior of incoming event callbacks (Update).
 	// If this is true, incoming events will just send into Updated channels. If
 	// false, events will trigger a reconnection.
-	joining moreatomic.Bool
+	joining atomic.Bool
 	// disconnectClosed is true if connected is already closed. It is only used
 	// to keep track of closing connected.
 	disconnectClosed bool
@@ -145,7 +145,7 @@ func (s *Session) SetUDPDialer(d udp.DialFunc) {
 }
 
 func (s *Session) acquireUpdate(f func()) {
-	if s.joining.Get() {
+	if s.joining.Load() {
 		return
 	}
 
@@ -226,11 +226,11 @@ func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute,
 
 	// Error out if we're already joining. JoinChannel shouldn't be called
 	// concurrently.
-	if !s.joining.Acquire() {
+	if !s.joining.CompareAndSwap(false, true) {
 		return errors.New("JoinChannel working elsewhere")
 	}
 
-	defer s.joining.Set(false)
+	defer s.joining.Store(false)
 
 	// Set the state.
 	if ch != nil {

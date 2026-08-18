@@ -4,12 +4,11 @@ import (
 	"sync"
 
 	"github.com/ayn2op/arikawa/v3/discord"
-	"github.com/ayn2op/arikawa/v3/internal/moreatomic"
 	"github.com/ayn2op/arikawa/v3/state/store"
 )
 
 type Message struct {
-	channels moreatomic.Map
+	channels *atomicMap[discord.ChannelID, *messages]
 	maxMsgs  int
 }
 
@@ -22,7 +21,7 @@ type messages struct {
 
 func NewMessage(maxMsgs int) *Message {
 	return &Message{
-		channels: *moreatomic.NewMap(func() any {
+		channels: newAtomicMap[discord.ChannelID](func() *messages {
 			return &messages{
 				messages: []discord.Message{}, // never use a nil slice
 			}
@@ -32,16 +31,15 @@ func NewMessage(maxMsgs int) *Message {
 }
 
 func (s *Message) Reset() error {
-	return s.channels.Reset()
+	s.channels.Reset()
+	return nil
 }
 
 func (s *Message) Message(chID discord.ChannelID, mID discord.MessageID) (*discord.Message, error) {
-	iv, ok := s.channels.Load(chID)
+	msgs, ok := s.channels.Load(chID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	msgs := iv.(*messages)
 
 	msgs.mut.RLock()
 	defer msgs.mut.RUnlock()
@@ -56,12 +54,10 @@ func (s *Message) Message(chID discord.ChannelID, mID discord.MessageID) (*disco
 }
 
 func (s *Message) Messages(channelID discord.ChannelID) ([]discord.Message, error) {
-	iv, ok := s.channels.Load(channelID)
+	msgs, ok := s.channels.Load(channelID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	msgs := iv.(*messages)
 
 	msgs.mut.RLock()
 	defer msgs.mut.RUnlock()
@@ -78,9 +74,7 @@ func (s *Message) MessageSet(message *discord.Message, update bool) error {
 		return nil
 	}
 
-	iv, _ := s.channels.LoadOrStore(message.ChannelID)
-
-	msgs := iv.(*messages)
+	msgs, _ := s.channels.LoadOrStore(message.ChannelID)
 
 	msgs.mut.Lock()
 	defer msgs.mut.Unlock()
@@ -215,12 +209,10 @@ func DiffMessage(src, dst *discord.Message) {
 }
 
 func (s *Message) MessageRemove(channelID discord.ChannelID, messageID discord.MessageID) error {
-	iv, ok := s.channels.Load(channelID)
+	msgs, ok := s.channels.Load(channelID)
 	if !ok {
 		return nil
 	}
-
-	msgs := iv.(*messages)
 
 	msgs.mut.Lock()
 	defer msgs.mut.Unlock()

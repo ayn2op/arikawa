@@ -4,12 +4,11 @@ import (
 	"sync"
 
 	"github.com/ayn2op/arikawa/v3/discord"
-	"github.com/ayn2op/arikawa/v3/internal/moreatomic"
 	"github.com/ayn2op/arikawa/v3/state/store"
 )
 
 type Member struct {
-	guilds moreatomic.Map // discord.GuildID -> *guildMembers
+	guilds *atomicMap[discord.GuildID, *guildMembers]
 }
 
 type guildMembers struct {
@@ -21,7 +20,7 @@ var _ store.MemberStore = (*Member)(nil)
 
 func NewMember() *Member {
 	return &Member{
-		guilds: *moreatomic.NewMap(func() any {
+		guilds: newAtomicMap[discord.GuildID](func() *guildMembers {
 			return &guildMembers{
 				members: make(map[discord.UserID]discord.Member, 1),
 			}
@@ -30,16 +29,15 @@ func NewMember() *Member {
 }
 
 func (s *Member) Reset() error {
-	return s.guilds.Reset()
+	s.guilds.Reset()
+	return nil
 }
 
 func (s *Member) Member(guildID discord.GuildID, userID discord.UserID) (*discord.Member, error) {
-	iv, ok := s.guilds.Load(guildID)
+	gm, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	gm := iv.(*guildMembers)
 
 	gm.mut.RLock()
 	defer gm.mut.RUnlock()
@@ -53,12 +51,10 @@ func (s *Member) Member(guildID discord.GuildID, userID discord.UserID) (*discor
 }
 
 func (s *Member) Members(guildID discord.GuildID) ([]discord.Member, error) {
-	iv, ok := s.guilds.Load(guildID)
+	gm, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	gm := iv.(*guildMembers)
 
 	gm.mut.RLock()
 	defer gm.mut.RUnlock()
@@ -72,8 +68,7 @@ func (s *Member) Members(guildID discord.GuildID) ([]discord.Member, error) {
 }
 
 func (s *Member) MemberSet(guildID discord.GuildID, m *discord.Member, update bool) error {
-	iv, _ := s.guilds.LoadOrStore(guildID)
-	gm := iv.(*guildMembers)
+	gm, _ := s.guilds.LoadOrStore(guildID)
 
 	gm.mut.Lock()
 	if _, ok := gm.members[m.User.ID]; !ok || update {
@@ -85,12 +80,10 @@ func (s *Member) MemberSet(guildID discord.GuildID, m *discord.Member, update bo
 }
 
 func (s *Member) MemberRemove(guildID discord.GuildID, userID discord.UserID) error {
-	iv, ok := s.guilds.Load(guildID)
+	gm, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil
 	}
-
-	gm := iv.(*guildMembers)
 
 	gm.mut.Lock()
 	delete(gm.members, userID)

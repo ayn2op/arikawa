@@ -4,12 +4,11 @@ import (
 	"sync"
 
 	"github.com/ayn2op/arikawa/v3/discord"
-	"github.com/ayn2op/arikawa/v3/internal/moreatomic"
 	"github.com/ayn2op/arikawa/v3/state/store"
 )
 
 type Role struct {
-	guilds moreatomic.Map
+	guilds *atomicMap[discord.GuildID, *roles]
 }
 
 var _ store.RoleStore = (*Role)(nil)
@@ -21,7 +20,7 @@ type roles struct {
 
 func NewRole() *Role {
 	return &Role{
-		guilds: *moreatomic.NewMap(func() any {
+		guilds: newAtomicMap[discord.GuildID](func() *roles {
 			return &roles{
 				roles: make(map[discord.RoleID]discord.Role, 1),
 			}
@@ -30,16 +29,15 @@ func NewRole() *Role {
 }
 
 func (s *Role) Reset() error {
-	return s.guilds.Reset()
+	s.guilds.Reset()
+	return nil
 }
 
 func (s *Role) Role(guildID discord.GuildID, roleID discord.RoleID) (*discord.Role, error) {
-	iv, ok := s.guilds.Load(guildID)
+	rs, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	rs := iv.(*roles)
 
 	rs.mut.RLock()
 	defer rs.mut.RUnlock()
@@ -53,12 +51,10 @@ func (s *Role) Role(guildID discord.GuildID, roleID discord.RoleID) (*discord.Ro
 }
 
 func (s *Role) Roles(guildID discord.GuildID) ([]discord.Role, error) {
-	iv, ok := s.guilds.Load(guildID)
+	rs, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil, store.ErrNotFound
 	}
-
-	rs := iv.(*roles)
 
 	rs.mut.RLock()
 	defer rs.mut.RUnlock()
@@ -72,9 +68,7 @@ func (s *Role) Roles(guildID discord.GuildID) ([]discord.Role, error) {
 }
 
 func (s *Role) RoleSet(guildID discord.GuildID, role *discord.Role, update bool) error {
-	iv, _ := s.guilds.LoadOrStore(guildID)
-
-	rs := iv.(*roles)
+	rs, _ := s.guilds.LoadOrStore(guildID)
 
 	rs.mut.Lock()
 	if _, ok := rs.roles[role.ID]; !ok || update {
@@ -86,12 +80,10 @@ func (s *Role) RoleSet(guildID discord.GuildID, role *discord.Role, update bool)
 }
 
 func (s *Role) RoleRemove(guildID discord.GuildID, roleID discord.RoleID) error {
-	iv, ok := s.guilds.Load(guildID)
+	rs, ok := s.guilds.Load(guildID)
 	if !ok {
 		return nil
 	}
-
-	rs := iv.(*roles)
 
 	rs.mut.Lock()
 	delete(rs.roles, roleID)

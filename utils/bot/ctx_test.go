@@ -16,9 +16,7 @@ import (
 	"github.com/ayn2op/arikawa/v3/utils/handler"
 )
 
-type testUnexportedCtx struct {
-	ctx *Context
-}
+type testUnexportedCtx struct{ _ *Context }
 
 func TestUnexportedCtx(t *testing.T) {
 	s := &state.State{

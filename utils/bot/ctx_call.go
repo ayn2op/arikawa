@@ -12,12 +12,12 @@ import (
 	"github.com/ayn2op/arikawa/v3/utils/json/option"
 )
 
-// Break is a non-fatal error that could be returned from middlewares to stop
+// ErrBreak is a non-fatal error that could be returned from middlewares to stop
 // the chain of execution.
-var Break = errors.New("break middleware chain, non-fatal")
+var ErrBreak = errors.New("break middleware chain, non-fatal")
 
 // filterEventType filters all commands and subcommands into a 2D slice,
-// structured so that a Break would only exit out the nested slice.
+// structured so that ErrBreak only exits the nested slice.
 func (ctx *Context) filterEventType(evT reflect.Type) (callers [][]caller) {
 	// Find the main context first.
 	callers = append(callers, ctx.eventCallers(evT))
@@ -49,12 +49,12 @@ func (ctx *Context) callCmd(ev any) (bottomError error) {
 		for _, c := range subcallers {
 			_, err := c.call(evV)
 			if err != nil {
-				// Only count as an error if it's not Break.
+				// Only count as an error if it's not ErrBreak.
 				if err = errNoBreak(err); err != nil {
 					bottomError = err
 				}
 
-				// Break the caller loop only for this subcommand.
+				// Stop the caller loop only for this subcommand.
 				break
 			}
 		}
@@ -152,7 +152,7 @@ func (ctx *Context) callMessageCreate(
 		// Do not mention on reply by default. Only allow author mentions.
 		data.AllowedMentions = &api.AllowedMentions{
 			Users:       []discord.UserID{mc.Author.ID},
-			RepliedUser: option.False,
+			RepliedUser: option.Some(false),
 		}
 	}
 
@@ -405,14 +405,14 @@ func (ctx *Context) findCommand(parts []string) (commandContext, error) {
 
 		// If unknown command is disabled or the subcommand is hidden:
 		if ctx.SilentUnknown.Subcommand || s.Hidden {
-			return emptyCommand, Break
+			return emptyCommand, ErrBreak
 		}
 
 		return emptyCommand, newErrUnknownCommand(s, parts)
 	}
 
 	if ctx.SilentUnknown.Command {
-		return emptyCommand, Break
+		return emptyCommand, ErrBreak
 	}
 
 	return emptyCommand, newErrUnknownCommand(ctx.Subcommand, parts)
@@ -445,7 +445,7 @@ func trimPrefixStringAndSlice(str string, prefix string, prefixes []string) stri
 }
 
 func errNoBreak(err error) error {
-	if errors.Is(err, Break) {
+	if errors.Is(err, ErrBreak) {
 		return nil
 	}
 	return err

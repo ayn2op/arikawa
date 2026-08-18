@@ -45,7 +45,7 @@ func TestRequestGuildMembersCommand(t *testing.T) {
 	t.Run("query_empty", func(t *testing.T) {
 		cmd := RequestGuildMembersCommand{
 			GuildIDs: []discord.GuildID{123},
-			Query:    option.NewString(""),
+			Query:    option.Some(""),
 		}
 
 		assert(&cmd, map[string]any{
@@ -59,7 +59,7 @@ func TestRequestGuildMembersCommand(t *testing.T) {
 	t.Run("query_nonempty", func(t *testing.T) {
 		cmd := RequestGuildMembersCommand{
 			GuildIDs: []discord.GuildID{123},
-			Query:    option.NewString("abc"),
+			Query:    option.Some("abc"),
 		}
 
 		assert(&cmd, map[string]any{
@@ -74,7 +74,7 @@ func TestRequestGuildMembersCommand(t *testing.T) {
 		cmd := RequestGuildMembersCommand{
 			GuildIDs: []discord.GuildID{123},
 			UserIDs:  []discord.UserID{456},
-			Query:    option.NewString("abc"),
+			Query:    option.Some("abc"),
 		}
 
 		// Gateway should never be touched when Marshal fails, so we can just

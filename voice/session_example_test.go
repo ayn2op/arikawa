@@ -42,21 +42,21 @@ func ExampleSession() {
 	voice.AddIntents(s)
 
 	if err := s.Open(ctx); err != nil {
-		log.Fatalln("failed to open gateway:", err)
+		log.Panicln("failed to open gateway:", err)
 	}
 	defer s.Close()
 
 	v, err := voice.NewSession(s)
 	if err != nil {
-		log.Fatalln("failed to create voice session:", err)
+		log.Panicln("failed to create voice session:", err)
 	}
 
 	if err := v.JoinChannelAndSpeak(ctx, channelID, false, false); err != nil {
-		log.Fatalln("failed to join voice channel:", err)
+		log.Panicln("failed to join voice channel:", err)
 	}
 	defer v.Leave(ctx)
 
 	if err := testdata.WriteOpus(v, "testdata/nico.dca"); err != nil {
-		log.Fatalln("failed to write opus:", err)
+		log.Panicln("failed to write opus:", err)
 	}
 }

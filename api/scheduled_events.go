@@ -39,7 +39,7 @@ type EditScheduledEventData struct {
 	// EntityMetadata is the new entity metadata of the scheduled event.
 	EntityMetadata *discord.EntityMetadata `json:"entity_metadata,omitempty"`
 	// Name is the new name of the scheduled event.
-	Name option.NullableString `json:"name,omitempty"`
+	Name *option.Nullable[string] `json:"name,omitempty"`
 	// PrivacyLevel is the new privacy level of the scheduled event.
 	PrivacyLevel discord.ScheduledEventPrivacyLevel `json:"privacy_level,omitempty"`
 	// StartTime is the new starting time for when the scheduled event begins.
@@ -47,7 +47,7 @@ type EditScheduledEventData struct {
 	// EndTime is the new time of which the scheduled event ends
 	EndTime *discord.Timestamp `json:"scheduled_end_time,omitempty"`
 	// Description is the new description of the scheduled event.
-	Description option.NullableString `json:"description,omitempty"`
+	Description *option.Nullable[string] `json:"description,omitempty"`
 	// EntityType is the new entity type of the scheduled event.
 	EntityType discord.EntityType `json:"entity_type,omitempty"`
 	// Status is the new event status of the scheduled event.
@@ -72,14 +72,14 @@ type GuildScheduledEventUser struct {
 //
 // https://discord.com/developers/docs/resources/guild-scheduled-event#get-guild-scheduled-event-users
 func (c *Client) ListScheduledEventUsers(
-	guildID discord.GuildID, eventID discord.EventID, limit option.NullableInt,
+	guildID discord.GuildID, eventID discord.EventID, limit *option.Nullable[int],
 	withMember bool, before, after discord.UserID) ([]GuildScheduledEventUser, error) {
 	var eventUsers []GuildScheduledEventUser
 	var params struct {
-		Limit      option.NullableInt `schema:"limit,omitempty"`
-		WithMember bool               `schema:"with_member,omitempty"`
-		Before     discord.UserID     `schema:"before,omitempty"`
-		After      discord.UserID     `schema:"after,omitempty"`
+		Limit      *option.Nullable[int] `schema:"limit,omitempty"`
+		WithMember bool                  `schema:"with_member,omitempty"`
+		Before     discord.UserID        `schema:"before,omitempty"`
+		After      discord.UserID        `schema:"after,omitempty"`
 	}
 	params.Limit = limit
 	params.WithMember = withMember

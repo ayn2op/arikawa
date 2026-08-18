@@ -108,7 +108,7 @@ type (
 		// ID is the id of the role.
 		ID discord.RoleID `json:"id"`
 		// Position is the sorting position of the role.
-		Position option.NullableInt `json:"position,omitempty"`
+		Position *option.Nullable[int] `json:"position,omitempty"`
 	}
 )
 
@@ -129,7 +129,7 @@ func (c *Client) MoveRoles(guildID discord.GuildID, data MoveRolesData) ([]disco
 // https://discord.com/developers/docs/resources/guild#modify-guild-role-json-params
 type ModifyRoleData struct {
 	// Name is the 	name of the role.
-	Name option.NullableString `json:"name,omitempty"`
+	Name *option.Nullable[string] `json:"name,omitempty"`
 	// Permissions is the bitwise value of the enabled/disabled permissions.
 	Permissions *discord.Permissions `json:"permissions,string,omitempty"`
 	// Permissions is the bitwise value of the enabled/disabled permissions.
@@ -138,16 +138,16 @@ type ModifyRoleData struct {
 	Color discord.Color `json:"color,omitempty"`
 	// Hoist specifies whether the role should be displayed separately in the
 	// sidebar.
-	Hoist option.NullableBool `json:"hoist,omitempty"`
+	Hoist *option.Nullable[bool] `json:"hoist,omitempty"`
 	// Mentionable specifies whether the role should be mentionable.
-	Mentionable option.NullableBool `json:"mentionable,omitempty"`
+	Mentionable *option.Nullable[bool] `json:"mentionable,omitempty"`
 
 	// Icon is the icon of the role. Requires the guild to have the ROLE_ICONS feature.
 	// This value is nullable.
 	// To reset the role's icon, set this to NullImage.
 	Icon *Image `json:"icon,omitempty"`
 	// UnicodeEmoji is the role's unicode emoji. Requires the guild to have the ROLE_ICONS feature.
-	UnicodeEmoji option.NullableString `json:"unicode_emoji,omitempty"`
+	UnicodeEmoji *option.Nullable[string] `json:"unicode_emoji,omitempty"`
 
 	AddRoleData `json:"-"`
 }

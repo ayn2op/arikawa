@@ -229,7 +229,7 @@ func TestRegionChange(t *testing.T) {
 		t.Log("changing voice region to", anyRegion)
 
 		if err := s.ModifyChannel(s.channel.ID, api.ModifyChannelData{
-			RTCRegionID: option.NewNullableString(anyRegion),
+			RTCRegionID: option.SomeNullable(anyRegion),
 		}); err != nil {
 			t.Error("cannot change voice region:", err)
 		}
@@ -243,7 +243,7 @@ func TestRegionChange(t *testing.T) {
 
 	// Change voice region back.
 	if err := s.ModifyChannel(s.channel.ID, api.ModifyChannelData{
-		RTCRegionID: option.NewNullableString(s.channel.RTCRegionID),
+		RTCRegionID: option.SomeNullable(s.channel.RTCRegionID),
 	}); err != nil {
 		t.Error("cannot change voice region back:", err)
 	}

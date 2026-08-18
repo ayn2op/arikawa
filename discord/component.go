@@ -94,8 +94,7 @@ type TopLevelComponents []TopLevelComponent
 // Find finds any component with the given custom ID.
 func (c *TopLevelComponents) Find(customID ComponentID) Component {
 	for _, component := range *c {
-		switch component := component.(type) {
-		case *ActionRowComponent:
+		if component, ok := component.(*ActionRowComponent); ok {
 			if component := component.Find(customID); component != nil {
 				return component
 			}
@@ -761,6 +760,7 @@ type TextInputComponent struct {
 	// Style determines if the component should use the short or paragraph style
 	Style TextInputStyle `json:"style"`
 	// Label is the title of this component, describing its use
+	//
 	// Deprecated: Deprecated in favor of 'label' and 'description' on the label component
 	Label string `json:"label,omitempty"`
 	// LengthLimits is the minimum and maximum length for the input

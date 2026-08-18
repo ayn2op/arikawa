@@ -57,7 +57,7 @@ func (c *Client) Webhook(webhookID discord.WebhookID) (*discord.Webhook, error) 
 // https://discord.com/developers/docs/resources/webhook#modify-webhook-json-params
 type ModifyWebhookData struct {
 	// Name is the default name of the webhook.
-	Name option.String `json:"name,omitempty"`
+	Name option.Option[string] `json:"name,omitempty"`
 	// Avatar is the image for the default webhook avatar.
 	Avatar *Image `json:"avatar,omitempty"`
 	// ChannelID is the new channel id this webhook should be moved to.

@@ -325,7 +325,7 @@ type ModifyGuildData struct {
 	// Name is the guild's name.
 	Name string `json:"name,omitempty"`
 	// Region is the guild's voice region id.
-	Region option.NullableString `json:"region,omitempty"`
+	Region *option.Nullable[string] `json:"region,omitempty"`
 
 	// Verification is the verification level.
 	//
@@ -379,7 +379,7 @@ type ModifyGuildData struct {
 	// server discovery and notices from Discord.
 	//
 	// This defaults to "en-US".
-	PreferredLocale option.NullableString `json:"preferred_locale,omitempty"`
+	PreferredLocale *option.Nullable[string] `json:"preferred_locale,omitempty"`
 
 	AuditLogReason `json:"-"`
 }
@@ -487,10 +487,10 @@ type ModifyIntegrationData struct {
 	ExpireBehavior *discord.ExpireBehavior `json:"expire_behavior,omitempty"`
 	// ExpireGracePeriod is the period (in days) where the integration will
 	// ignore lapsed subscriptions.
-	ExpireGracePeriod option.NullableInt `json:"expire_grace_period,omitempty"`
+	ExpireGracePeriod *option.Nullable[int] `json:"expire_grace_period,omitempty"`
 	// EnableEmoticons specifies whether emoticons should be synced for this
 	// integration (twitch only currently).
-	EnableEmoticons option.NullableBool `json:"enable_emoticons,omitempty"`
+	EnableEmoticons *option.Nullable[bool] `json:"enable_emoticons,omitempty"`
 }
 
 // ModifyIntegration modifies the behavior and settings of an integration
@@ -537,7 +537,7 @@ func (c *Client) GuildWidgetSettings(
 // https://discord.com/developers/docs/resources/guild#guild-widget-object
 type ModifyGuildWidgetData struct {
 	// Enabled specifies whether the widget is enabled.
-	Enabled option.Bool `json:"enabled,omitempty"`
+	Enabled option.Option[bool] `json:"enabled,omitempty"`
 	// ChannelID is the widget channel ID.
 	ChannelID discord.ChannelID `json:"channel_id,omitempty"`
 

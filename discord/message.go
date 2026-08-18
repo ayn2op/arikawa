@@ -114,7 +114,7 @@ type Message struct {
 	MessageSnapshots []MessageSnapshot `json:"message_snapshots,omitempty"`
 
 	// Thread is the thread that was started from this message, includes the thread member object.
-	Thread option.Optional[Channel] `json:"thread,omitzero"`
+	Thread option.Option[Channel] `json:"thread,omitzero"`
 
 	// Call is the private channel call (MessageCall) that prompted this message.
 	Call MessageCall `json:"call,omitzero"`

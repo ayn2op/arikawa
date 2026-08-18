@@ -88,7 +88,7 @@ type RequestGuildMembersCommand struct {
 	// Query is a string to search for matching usernames. If this is filled,
 	// then the UserIDs field must be empty. If Query is empty, then all members
 	// are filled for bots.
-	Query option.String `json:"query,omitempty"`
+	Query option.Option[string] `json:"query,omitempty"`
 	// Limit is used to specify the maximum number of members to send back when
 	// Query is used.
 	Limit uint `json:"limit,omitempty"`

@@ -38,7 +38,7 @@ func main() {
 				resp = api.InteractionResponse{
 					Type: api.MessageInteractionWithSource,
 					Data: &api.InteractionResponseData{
-						Content: option.NewNullableString("Unknown command: " + data.Name),
+						Content: option.SomeNullable("Unknown command: " + data.Name),
 					},
 				}
 				break
@@ -47,7 +47,7 @@ func main() {
 			resp = api.InteractionResponse{
 				Type: api.MessageInteractionWithSource,
 				Data: &api.InteractionResponseData{
-					Content: option.NewNullableString("This is a message with a button!"),
+					Content: option.SomeNullable("This is a message with a button!"),
 					Components: discord.ComponentsPtr(
 						&discord.ActionRowComponent{
 							&discord.ButtonComponent{
@@ -84,7 +84,7 @@ func main() {
 			resp = api.InteractionResponse{
 				Type: api.UpdateMessage,
 				Data: &api.InteractionResponseData{
-					Content: option.NewNullableString("Custom ID: " + string(data.ID())),
+					Content: option.SomeNullable("Custom ID: " + string(data.ID())),
 				},
 			}
 		default:

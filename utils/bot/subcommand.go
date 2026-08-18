@@ -124,9 +124,7 @@ func NewSubcommand(cmd any) (*Subcommand, error) {
 		return nil, fmt.Errorf("failed to reflect commands: %w", err)
 	}
 
-	if err := sub.parseCommands(); err != nil {
-		return nil, fmt.Errorf("failed to parse commands: %w", err)
-	}
+	sub.parseCommands()
 
 	return &sub, nil
 }
@@ -363,7 +361,7 @@ func (sub *Subcommand) fillStruct(ctx *Context) error {
 	return errors.New("no exported field with *bot.Context found")
 }
 
-func (sub *Subcommand) parseCommands() error {
+func (sub *Subcommand) parseCommands() {
 	var numMethods = sub.ptrValue.NumMethod()
 
 	for i := range numMethods {
@@ -391,7 +389,6 @@ func (sub *Subcommand) parseCommands() error {
 		}
 	}
 
-	return nil
 }
 
 // AddMiddleware adds a middleware into multiple or all methods, including

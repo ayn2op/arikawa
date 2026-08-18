@@ -29,7 +29,7 @@ func (c *Client) Me() (*discord.User, error) {
 type ModifyCurrentUserData struct {
 	// Username is the user's username, if changed may cause the user's
 	// discriminator to be randomized.
-	Username option.String `json:"username,omitempty"`
+	Username option.Option[string] `json:"username,omitempty"`
 	// Avatar modifies the user's avatar.
 	Avatar *Image `json:"image,omitempty"`
 

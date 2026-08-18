@@ -288,7 +288,7 @@ func New(s *state.State, cmd any) (*Context, error) {
 		HasPrefix:  NewPrefix("~"),
 		FormatError: func(err error) string {
 			// Escape all pings, including @everyone.
-			return strings.Replace(err.Error(), "@", "@\u200b", -1)
+			return strings.ReplaceAll(err.Error(), "@", "@\u200b")
 		},
 		ErrorLogger: func(err error) {
 			log.Println("Bot error:", err)
@@ -400,9 +400,6 @@ func (ctx *Context) RegisterSubcommand(cmd any, names ...string) (*Subcommand, e
 	ctx.subcommands = append(ctx.subcommands, s)
 	return s, nil
 }
-
-// emptyMentionTypes is used by Start() to not parse any mentions.
-var emptyMentionTypes = []api.AllowedMentionType{}
 
 // Start adds itself into the session handlers. If Start is called more than
 // once, then it does nothing. The caller doesn't have to call Start if they

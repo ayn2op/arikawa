@@ -440,14 +440,14 @@ type CommandOptionValue interface {
 
 // StringOption is a subcommand option that fits into a CommandOptionValue.
 type StringOption struct {
-	OptionName               string         `json:"name"`
-	OptionNameLocalizations  StringLocales  `json:"name_localizations,omitempty"`
-	Description              string         `json:"description"`
-	DescriptionLocalizations StringLocales  `json:"description_localizations,omitempty"`
-	Required                 bool           `json:"required"`
-	Choices                  []StringChoice `json:"choices,omitempty"`
-	MinLength                option.Int     `json:"min_length,omitempty"`
-	MaxLength                option.Int     `json:"max_length,omitempty"`
+	OptionName               string             `json:"name"`
+	OptionNameLocalizations  StringLocales      `json:"name_localizations,omitempty"`
+	Description              string             `json:"description"`
+	DescriptionLocalizations StringLocales      `json:"description_localizations,omitempty"`
+	Required                 bool               `json:"required"`
+	Choices                  []StringChoice     `json:"choices,omitempty"`
+	MinLength                option.Option[int] `json:"min_length,omitempty"`
+	MaxLength                option.Option[int] `json:"max_length,omitempty"`
 	// Autocomplete must not be true if Choices are present.
 	Autocomplete bool `json:"autocomplete"`
 	// LocalizedOptionName is only populated when this is received from
@@ -476,14 +476,14 @@ type StringChoice struct {
 
 // IntegerOption is a subcommand option that fits into a CommandOptionValue.
 type IntegerOption struct {
-	OptionName               string          `json:"name"`
-	OptionNameLocalizations  StringLocales   `json:"name_localizations,omitempty"`
-	Description              string          `json:"description"`
-	DescriptionLocalizations StringLocales   `json:"description_localizations,omitempty"`
-	Required                 bool            `json:"required"`
-	Min                      option.Int      `json:"min_value,omitempty"`
-	Max                      option.Int      `json:"max_value,omitempty"`
-	Choices                  []IntegerChoice `json:"choices,omitempty"`
+	OptionName               string             `json:"name"`
+	OptionNameLocalizations  StringLocales      `json:"name_localizations,omitempty"`
+	Description              string             `json:"description"`
+	DescriptionLocalizations StringLocales      `json:"description_localizations,omitempty"`
+	Required                 bool               `json:"required"`
+	Min                      option.Option[int] `json:"min_value,omitempty"`
+	Max                      option.Option[int] `json:"max_value,omitempty"`
+	Choices                  []IntegerChoice    `json:"choices,omitempty"`
 	// Autocomplete must not be true if Choices are present.
 	Autocomplete bool `json:"autocomplete"`
 	// LocalizedOptionName is only populated when this is received from
@@ -623,14 +623,14 @@ func (m *MentionableOption) _val()                   {}
 
 // NumberOption is a subcommand option that fits into a CommandOptionValue.
 type NumberOption struct {
-	OptionName               string         `json:"name"`
-	OptionNameLocalizations  StringLocales  `json:"name_localizations,omitempty"`
-	Description              string         `json:"description"`
-	DescriptionLocalizations StringLocales  `json:"description_localizations,omitempty"`
-	Required                 bool           `json:"required"`
-	Min                      option.Float   `json:"min_value,omitempty"`
-	Max                      option.Float   `json:"max_value,omitempty"`
-	Choices                  []NumberChoice `json:"choices,omitempty"`
+	OptionName               string                 `json:"name"`
+	OptionNameLocalizations  StringLocales          `json:"name_localizations,omitempty"`
+	Description              string                 `json:"description"`
+	DescriptionLocalizations StringLocales          `json:"description_localizations,omitempty"`
+	Required                 bool                   `json:"required"`
+	Min                      option.Option[float64] `json:"min_value,omitempty"`
+	Max                      option.Option[float64] `json:"max_value,omitempty"`
+	Choices                  []NumberChoice         `json:"choices,omitempty"`
 	// Autocomplete must not be true if Choices are present.
 	Autocomplete bool `json:"autocomplete"`
 	// LocalizedOptionName is only populated when this is received from

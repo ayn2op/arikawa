@@ -144,9 +144,9 @@ func (s *Session) SetUDPDialer(d udp.DialFunc) {
 	s.udpManager.SetDialer(d)
 }
 
-func (s *Session) acquireUpdate(f func()) bool {
+func (s *Session) acquireUpdate(f func()) {
 	if s.joining.Get() {
-		return false
+		return
 	}
 
 	s.mut.Lock()
@@ -154,11 +154,10 @@ func (s *Session) acquireUpdate(f func()) bool {
 
 	// Ignore if we haven't connected yet or we're still joining.
 	if s.udpManager.IsClosed() {
-		return false
+		return
 	}
 
 	f()
-	return true
 }
 
 // updateServer is specifically used to monitor for reconnects.
@@ -564,11 +563,6 @@ func (s *Session) cancelGateway(ctx context.Context) error {
 
 	return nil
 }
-
-const (
-	permanentClose = true
-	temporaryClose = false
-)
 
 // close ensures everything is closed. It does not acquire the mutex.
 func (s *Session) ensureClosed() {

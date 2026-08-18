@@ -24,10 +24,10 @@ func mockRequest(t *testing.T, l *Limiter, path string, headers http.Header) {
 func TestRatelimitReset(t *testing.T) {
 	l := NewLimiter("")
 
-	const msToSec = time.Second / time.Millisecond
+	const millisecondsPerSecond = time.Second / time.Millisecond
 
 	until := time.Now().Add(2 * time.Second)
-	reset := float64(until.UnixNano()/int64(time.Millisecond)) / float64(msToSec)
+	reset := float64(until.UnixNano()/int64(time.Millisecond)) / float64(millisecondsPerSecond)
 
 	headers := http.Header{}
 	headers.Set("X-RateLimit-Remaining", "0")

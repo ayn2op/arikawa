@@ -57,7 +57,7 @@ func TestRouter(t *testing.T) {
 
 	t.Run("return", func(t *testing.T) {
 		data := &api.InteractionResponseData{
-			Content: option.NewNullableString("pong"),
+			Content: option.SomeNullable("pong"),
 		}
 
 		r := NewRouter()
@@ -147,7 +147,7 @@ func TestRouter(t *testing.T) {
 			return &api.InteractionResponse{
 				Type: api.MessageInteractionWithSource,
 				Data: &api.InteractionResponseData{
-					Content: option.NewNullableString(string(button.CustomID)),
+					Content: option.SomeNullable(string(button.CustomID)),
 				},
 			}
 		})
@@ -157,7 +157,7 @@ func TestRouter(t *testing.T) {
 		if !reflect.DeepEqual(resp, &api.InteractionResponse{
 			Type: api.MessageInteractionWithSource,
 			Data: &api.InteractionResponseData{
-				Content: option.NewNullableString("ping"),
+				Content: option.SomeNullable("ping"),
 			},
 		}) {
 			t.Fatal("unexpected response")
@@ -237,7 +237,7 @@ func TestRouter(t *testing.T) {
 				d: api.InteractionResponse{
 					Type: api.MessageInteractionWithSource,
 					Data: &api.InteractionResponseData{
-						Content: option.NewNullableString("pong-defer"),
+						Content: option.SomeNullable("pong-defer"),
 						Flags:   discord.EphemeralMessage,
 					},
 				},
@@ -269,7 +269,7 @@ func TestRouter(t *testing.T) {
 		r.AddFunc("ping", func(ctx context.Context, data CommandData) *api.InteractionResponseData {
 			assertDeferred(t, ctx, false)
 			return &api.InteractionResponseData{
-				Content: option.NewNullableString("pong"),
+				Content: option.SomeNullable("pong"),
 			}
 		})
 		r.AddFunc("ping-defer", func(ctx context.Context, data CommandData) *api.InteractionResponseData {
@@ -277,7 +277,7 @@ func TestRouter(t *testing.T) {
 			time.Sleep(200 * time.Millisecond)
 			assertDeferred(t, ctx, true)
 			return &api.InteractionResponseData{
-				Content: option.NewNullableString("pong-defer"),
+				Content: option.SomeNullable("pong-defer"),
 			}
 		})
 
@@ -290,7 +290,7 @@ func TestRouter(t *testing.T) {
 			&api.InteractionResponse{
 				Type: api.MessageInteractionWithSource,
 				Data: &api.InteractionResponseData{
-					Content: option.NewNullableString("pong"),
+					Content: option.SomeNullable("pong"),
 					Flags:   discord.EphemeralMessage,
 				},
 			},

@@ -44,9 +44,7 @@ func Parse(line string) ([]string, error) {
 	got := false
 	cursor := 0
 
-	runes := []rune(line)
-
-	for _, r := range runes {
+	for _, r := range line {
 		if escaped {
 			buf.WriteRune(r)
 			escaped = false

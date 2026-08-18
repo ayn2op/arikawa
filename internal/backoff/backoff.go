@@ -14,10 +14,6 @@ const (
 	jitter = true
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 // Timer is a backoff timer.
 type Timer struct {
 	backoff Backoff
@@ -61,7 +57,7 @@ func (t *Timer) Stop() {
 // never exceeds Max.
 type Backoff struct {
 	min, max float64 // seconds
-	attempt  int32   // negative == max uint32
+	attempt  atomic.Int32
 }
 
 // NewBackoff creates a new backoff time.Duration counter.
@@ -74,10 +70,8 @@ func NewBackoff(min, max time.Duration) Backoff {
 
 // Next returns the next backoff duration.
 func (b *Backoff) Next() time.Duration {
-	return b.forAttempt(atomic.AddInt32(&b.attempt, 1) - 1)
+	return b.forAttempt(b.attempt.Add(1) - 1)
 }
-
-const maxInt64 = float64(math.MaxInt64 - 512)
 
 // forAttempt returns the duration for a specific attempt. This is useful if
 // you have a large number of independent Backoffs, but don't want use

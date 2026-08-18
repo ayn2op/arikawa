@@ -50,7 +50,7 @@ type CreateChannelData struct {
 	// Position is the sorting position of the channel.
 	//
 	// Channel Types: All
-	Position option.Int `json:"position,omitempty"`
+	Position option.Option[int] `json:"position,omitempty"`
 	// Overwrites are the channel's permission overwrites.
 	//
 	// Channel Types: All
@@ -111,10 +111,10 @@ type (
 		// ID is the channel id.
 		ID discord.ChannelID `json:"id"`
 		// Position is the sorting position of the channel.
-		Position option.Int `json:"position"`
+		Position option.Option[int] `json:"position"`
 		// LockPermissions syncs the permission overwrites with the new parent,
 		// if moving to a new category.
-		LockPermissions option.Bool `json:"lock_permissions"`
+		LockPermissions option.Option[bool] `json:"lock_permissions"`
 		// CategoryID is the new parent ID for the channel that is moved.
 		CategoryID discord.ChannelID `json:"parent_id,string,omitempty"`
 	}
@@ -154,39 +154,39 @@ type ModifyChannelData struct {
 	// Position is the position of the channel in the left-hand listing.
 	//
 	// Channel Types: Text, News, Voice, Store, Category
-	Position option.NullableInt `json:"position,omitempty"`
+	Position *option.Nullable[int] `json:"position,omitempty"`
 	// Topic is the 0-1024 character channel topic.
 	//
 	// Channel Types: Text, News
-	Topic option.NullableString `json:"topic,omitempty"`
+	Topic *option.Nullable[string] `json:"topic,omitempty"`
 	// Flags is a bitmask that contains if a thread is pinned for example
 	Flags *discord.ChannelFlags `json:"flags,omitempty"`
 	// NSFW specifies whether the channel is nsfw.
 	//
 	// Channel Types: Text, News, Store
-	NSFW option.NullableBool `json:"nsfw,omitempty"`
+	NSFW *option.Nullable[bool] `json:"nsfw,omitempty"`
 	// UserRateLimit is the amount of seconds a user has to wait before sending
 	// another message (0-21600).
 	// Bots, as well as users with the permission manage_messages or
 	// manage_channel, are unaffected.
 	//
 	// Channel Types: Text, Thread
-	UserRateLimit option.NullableUint `json:"rate_limit_per_user,omitempty"`
+	UserRateLimit *option.Nullable[uint] `json:"rate_limit_per_user,omitempty"`
 	// VoiceBitrate is the bitrate (in bits) of the voice channel.
 	// 8000 to 96000 (128000 for VIP servers)
 	//
 	// Channel Types: Voice
-	VoiceBitrate option.NullableUint `json:"bitrate,omitempty"`
+	VoiceBitrate *option.Nullable[uint] `json:"bitrate,omitempty"`
 	// VoiceUserLimit is the user limit of the voice channel.
 	// 0 refers to no limit, 1 to 99 refers to a user limit.
 	//
 	// Channel Types: Voice
-	VoiceUserLimit option.NullableUint `json:"user_limit,omitempty"`
+	VoiceUserLimit *option.Nullable[uint] `json:"user_limit,omitempty"`
 	// RTCRegionID is the channel voice region id. It will be determined
 	// automatically set, if omitted.
 	//
 	// Channel Types: Voice
-	RTCRegionID option.NullableString `json:"rtc_region,omitempty"`
+	RTCRegionID *option.Nullable[string] `json:"rtc_region,omitempty"`
 	// Overwrites are the channel or category-specific permissions.
 	//
 	// Channel Types: Text, News, Store, Voice, Category
@@ -202,7 +202,7 @@ type ModifyChannelData struct {
 	Icon string `json:"icon,omitempty"`
 
 	// Archived specifies whether the thread is archived.
-	Archived option.Bool `json:"archived,omitempty"`
+	Archived option.Option[bool] `json:"archived,omitempty"`
 	// AutoArchiveDuration is the duration in minutes to automatically archive
 	// the thread after recent activity.
 	//
@@ -211,10 +211,10 @@ type ModifyChannelData struct {
 	AutoArchiveDuration discord.ArchiveDuration `json:"auto_archive_duration,omitempty"`
 	// Locked specifies whether the thread is locked. When a thread is locked,
 	// only users with MANAGE_THREADS can unarchive it.
-	Locked option.Bool `json:"locked,omitempty"`
+	Locked option.Option[bool] `json:"locked,omitempty"`
 	// Invitable specifies whether non-moderators can add other
 	// non-moderators to a thread; only available on private threads
-	Invitable option.Bool `json:"invitable,omitempty"`
+	Invitable option.Option[bool] `json:"invitable,omitempty"`
 
 	AvailableTags        *[]discord.Tag          `json:"available_tags,omitempty"`
 	AppliedTags          *[]discord.TagID        `json:"applied_tags,omitempty"`

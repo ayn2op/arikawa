@@ -17,7 +17,7 @@ var commands = []api.CreateCommandData{{Name: "ping", Description: "Ping!"}}
 func main() {
 	r := cmdroute.NewRouter()
 	r.AddFunc("ping", func(ctx context.Context, data cmdroute.CommandData) *api.InteractionResponseData {
-		return &api.InteractionResponseData{Content: option.NewNullableString("Pong!")}
+		return &api.InteractionResponseData{Content: option.SomeNullable("Pong!")}
 	})
 
 	s := state.New("Bot " + os.Getenv("BOT_TOKEN"))

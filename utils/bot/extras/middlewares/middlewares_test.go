@@ -102,7 +102,7 @@ func expectNil(t *testing.T, err error) {
 
 func expectBreak(t *testing.T, err error) {
 	t.Helper()
-	if errors.Is(err, bot.Break) {
+	if errors.Is(err, bot.ErrBreak) {
 		return
 	}
 	if err != nil {

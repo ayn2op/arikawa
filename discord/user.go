@@ -33,9 +33,9 @@ type User struct {
 	Accent Color `json:"accent_color,omitempty"`
 
 	// NSFWAllowed indicates whether the user is allowed to see NSFW content, `nil` if not yet known.
-	NSFWAllowed option.Bool `json:"nsfw_allowed,omitempty"`
-	Pronouns    string      `json:"pronouns,omitempty"`
-	Bio         string      `json:"bio,omitempty"`
+	NSFWAllowed option.Option[bool] `json:"nsfw_allowed,omitempty"`
+	Pronouns    string              `json:"pronouns,omitempty"`
+	Bio         string              `json:"bio,omitempty"`
 }
 
 // CreatedAt returns a time object representing when the user was created.
@@ -258,11 +258,11 @@ type ActivitySecrets struct {
 // A Relationship between the logged in user and the user in the struct. This
 // struct is undocumented.
 type Relationship struct {
-	UserID   UserID           `json:"id"`
-	User     User             `json:"user"`
-	Type     RelationshipType `json:"type"`
-	Since    Timestamp        `json:"since,omitzero"`
-	Nickname option.String    `json:"nickname"`
+	UserID   UserID                `json:"id"`
+	User     User                  `json:"user"`
+	Type     RelationshipType      `json:"type"`
+	Since    Timestamp             `json:"since,omitzero"`
+	Nickname option.Option[string] `json:"nickname"`
 }
 
 // RelationshipType is an enum for a relationship.

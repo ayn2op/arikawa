@@ -3,7 +3,7 @@ package arguments
 import (
 	"bytes"
 	"flag"
-	"io/ioutil"
+	"io"
 )
 
 var FlagName = "command"
@@ -14,7 +14,7 @@ type FlagSet struct {
 
 func NewFlagSet() *FlagSet {
 	fs := flag.NewFlagSet(FlagName, flag.ContinueOnError)
-	fs.SetOutput(ioutil.Discard)
+	fs.SetOutput(io.Discard)
 
 	return &FlagSet{fs}
 }
@@ -24,7 +24,7 @@ func (fs *FlagSet) Usage() string {
 
 	fs.FlagSet.SetOutput(&buf)
 	fs.FlagSet.Usage()
-	fs.FlagSet.SetOutput(ioutil.Discard)
+	fs.FlagSet.SetOutput(io.Discard)
 
 	return buf.String()
 }

@@ -112,7 +112,7 @@ type AddMemberData struct {
 	// Nick is the value to set users nickname to.
 	//
 	// Requires MANAGE_NICKNAMES.
-	Nick option.String `json:"nick,omitempty"`
+	Nick option.Option[string] `json:"nick,omitempty"`
 	// Roles is an array of role ids the member is assigned.
 	//
 	// Requires MANAGE_ROLES.
@@ -120,11 +120,11 @@ type AddMemberData struct {
 	// Mute specifies whether the user is muted in voice channels.
 	//
 	// Requires MUTE_MEMBERS.
-	Mute option.Bool `json:"mute,omitempty"`
+	Mute option.Option[bool] `json:"mute,omitempty"`
 	// Deaf specifies whether the user is deafened in voice channels.
 	//
 	// Requires DEAFEN_MEMBERS.
-	Deaf option.Bool `json:"deaf,omitempty"`
+	Deaf option.Option[bool] `json:"deaf,omitempty"`
 }
 
 // AddMember adds a user to the guild, provided you have a valid oauth2 access
@@ -153,7 +153,7 @@ type ModifyMemberData struct {
 	// Nick is the value to set users nickname to.
 	//
 	// Requires MANAGE_NICKNAMES.
-	Nick option.String `json:"nick,omitempty"`
+	Nick option.Option[string] `json:"nick,omitempty"`
 	// Roles is an array of role ids the member is assigned.
 	//
 	// Requires MANAGE_ROLES.
@@ -161,11 +161,11 @@ type ModifyMemberData struct {
 	// Mute specifies whether the user is muted in voice channels.
 	//
 	// Requires MUTE_MEMBERS.
-	Mute option.Bool `json:"mute,omitempty"`
+	Mute option.Option[bool] `json:"mute,omitempty"`
 	// Deaf specifies whether the user is deafened in voice channels.
 	//
 	// Requires DEAFEN_MEMBERS.
-	Deaf option.Bool `json:"deaf,omitempty"`
+	Deaf option.Option[bool] `json:"deaf,omitempty"`
 
 	// Voice channel is the id of channel to move user to (if they are
 	// connected to voice).
@@ -307,7 +307,7 @@ func (c *Client) GetBan(guildID discord.GuildID, userID discord.UserID) (*discor
 // https://discord.com/developers/docs/resources/guild#create-guild-ban-query-string-params
 type BanData struct {
 	// DeleteDays is the number of days to delete messages for (0-7).
-	DeleteDays option.Uint `schema:"delete_message_days,omitempty"`
+	DeleteDays option.Option[uint] `schema:"delete_message_days,omitempty"`
 
 	AuditLogReason `schema:"-"`
 }

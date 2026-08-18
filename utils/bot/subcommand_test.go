@@ -37,9 +37,7 @@ func TestSubcommand(t *testing.T) {
 	})
 
 	t.Run("parse commands", func(t *testing.T) {
-		if err := sub.parseCommands(); err != nil {
-			t.Fatal("Failed to parse commands:", err)
-		}
+		sub.parseCommands()
 
 		// !!! CHANGE ME
 		if len(sub.Commands) < 8 {

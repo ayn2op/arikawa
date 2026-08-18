@@ -166,7 +166,7 @@ type IdentifyCommand struct {
 	// For bot accounts, it must not be nil, and
 	// Gateway.AddIntents(0) can be used if you want to
 	// specify no intents.
-	Intents option.Uint `json:"intents,omitempty"`
+	Intents option.Option[uint] `json:"intents,omitempty"`
 }
 
 // DefaultIdentifyCommand creates a default IdentifyCommand with the given token.
@@ -193,7 +193,7 @@ func (i *IdentifyCommand) SetShard(id, num int) {
 // AddIntents adds gateway intents into the identify data.
 func (i *IdentifyCommand) AddIntents(intents Intents) {
 	if i.Intents == nil {
-		i.Intents = option.NewUint(uint(intents))
+		i.Intents = option.Some(uint(intents))
 	} else {
 		*i.Intents |= uint(intents)
 	}

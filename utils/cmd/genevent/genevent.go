@@ -99,7 +99,7 @@ func main() {
 	}
 
 	if _, err := output.Write(b); err != nil {
-		log.Fatalln("failed to write rendered:", err)
+		log.Panicln("failed to write rendered:", err)
 	}
 }
 

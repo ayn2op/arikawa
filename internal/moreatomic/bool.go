@@ -3,11 +3,11 @@ package moreatomic
 import "sync/atomic"
 
 type Bool struct {
-	val uint32
+	val atomic.Uint32
 }
 
 func (b *Bool) Get() bool {
-	return atomic.LoadUint32(&b.val) > 0
+	return b.val.Load() > 0
 }
 
 func (b *Bool) Set(val bool) {
@@ -15,19 +15,19 @@ func (b *Bool) Set(val bool) {
 	if val {
 		x = 1
 	}
-	atomic.StoreUint32(&b.val, x)
+	b.val.Store(x)
 }
 
 func (b *Bool) SetTrue() {
-	atomic.StoreUint32(&b.val, 1)
+	b.val.Store(1)
 }
 
 func (b *Bool) SetFalse() {
-	atomic.StoreUint32(&b.val, 0)
+	b.val.Store(0)
 }
 
 // Acquire sets bool to true if it's false and returns true, otherwise returns
 // false.
 func (b *Bool) Acquire() bool {
-	return atomic.CompareAndSwapUint32(&b.val, 0, 1)
+	return b.val.CompareAndSwap(0, 1)
 }

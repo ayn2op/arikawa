@@ -265,7 +265,6 @@ type handler struct {
 	chanclose reflect.Value // IsValid() if chan
 	isIface   bool
 	isSync    bool
-	isOnce    bool
 }
 
 var _ Caller = (*handler)(nil)

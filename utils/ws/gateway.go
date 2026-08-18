@@ -323,8 +323,7 @@ func (g *Gateway) spin(ctx context.Context, h Handler) {
 				continue
 			}
 
-			switch data := op.Data.(type) {
-			case *CloseEvent:
+			if data, ok := op.Data.(*CloseEvent); ok {
 				if g.opts.ErrorIsFatalClose(data) {
 					// Don't wrap the error, but instead, just pipe it as-is
 					// through the channel.

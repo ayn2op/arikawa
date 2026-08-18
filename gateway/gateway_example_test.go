@@ -17,7 +17,7 @@ func Example() {
 
 	g, err := gateway.NewWithIntents(ctx, token, gateway.IntentGuilds)
 	if err != nil {
-		log.Fatalln("failed to initialize gateway:", err)
+		log.Panicln("failed to initialize gateway:", err)
 	}
 
 	for op := range g.Connect(ctx) {

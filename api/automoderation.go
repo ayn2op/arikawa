@@ -42,19 +42,19 @@ func (c *Client) CreateAutoModerationRule(guildID discord.GuildID, rule discord.
 
 type ModifyAutoModerationRuleData struct {
 	// the rule name
-	Name option.String `json:"name,omitempty"`
+	Name option.Option[string] `json:"name,omitempty"`
 	// the event type
-	EventType option.Optional[discord.AutoModerationEventType] `json:"event_type,omitempty"`
+	EventType option.Option[discord.AutoModerationEventType] `json:"event_type,omitempty"`
 	// the trigger metadata
-	TriggerMetadata option.Optional[discord.AutoModerationTriggerMetadata] `json:"triggr_metadata,omitempty"`
+	TriggerMetadata option.Option[discord.AutoModerationTriggerMetadata] `json:"triggr_metadata,omitempty"`
 	// the actions which will execute when the rule is triggered
-	Actions option.Optional[[]discord.AutoModerationAction] `json:"actions,omitempty"`
+	Actions option.Option[[]discord.AutoModerationAction] `json:"actions,omitempty"`
 	// whether the rule is enabled
-	Enabled option.Bool `json:"enabled,omitempty"`
+	Enabled option.Option[bool] `json:"enabled,omitempty"`
 	// the role ids that should not be affected by the rule (Maximum of 20)
-	ExemptRules option.Optional[[]discord.RoleID] `json:"exempt_roles,omitempty"`
+	ExemptRules option.Option[[]discord.RoleID] `json:"exempt_roles,omitempty"`
 	// the channel ids that should not be affected by the rule (Maximum of 50)
-	ExemptChannels option.Optional[[]discord.ChannelID] `json:"exempt_channels,omitempty"`
+	ExemptChannels option.Option[[]discord.ChannelID] `json:"exempt_channels,omitempty"`
 	AuditLogReason
 }
 
@@ -65,9 +65,9 @@ type ModifyAutoModerationRuleData struct {
 // All parameters for this endpoint are optional.
 //
 // This endpoint supports the X-Audit-Log-Reason header.
-func (c *Client) ModifyAutoModerationRule(GuildID discord.GuildID, RuleID discord.AutoModerationRuleID, data ModifyAutoModerationRuleData) (*discord.AutoModerationRule, error) {
+func (c *Client) ModifyAutoModerationRule(guildID discord.GuildID, ruleID discord.AutoModerationRuleID, data ModifyAutoModerationRuleData) (*discord.AutoModerationRule, error) {
 	var ret *discord.AutoModerationRule
-	return ret, c.RequestJSON(&ret, "PATCH", EndpointGuilds+GuildID.String()+"/auto-moderation/rules/"+RuleID.String(),
+	return ret, c.RequestJSON(&ret, "PATCH", EndpointGuilds+guildID.String()+"/auto-moderation/rules/"+ruleID.String(),
 		httputil.WithJSONBody(data),
 		httputil.WithHeaders(data.Header()),
 	)
@@ -82,6 +82,6 @@ type DeleteAutoModerationRuleData struct {
 // This endpoint requires the MANAGE_GUILD permission.
 //
 // This endpoint supports the X-Audit-Log-Reason header.
-func (c *Client) DeleteAutoModerationRule(GuildID discord.GuildID, RuleID discord.AutoModerationRuleID, data DeleteAutoModerationRuleData) error {
-	return c.FastRequest("DELETE", EndpointGuilds+GuildID.String()+"/auto-moderation/rules/"+RuleID.String(), httputil.WithHeaders(data.Header()))
+func (c *Client) DeleteAutoModerationRule(guildID discord.GuildID, ruleID discord.AutoModerationRuleID, data DeleteAutoModerationRuleData) error {
+	return c.FastRequest("DELETE", EndpointGuilds+guildID.String()+"/auto-moderation/rules/"+ruleID.String(), httputil.WithHeaders(data.Header()))
 }

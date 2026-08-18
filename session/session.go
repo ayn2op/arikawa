@@ -63,7 +63,7 @@ func NewWithIntents(token string, intents ...gateway.Intents) *Session {
 	}
 
 	id := gateway.DefaultIdentifier(token)
-	id.Intents = option.NewUint(uint(allIntent))
+	id.Intents = option.Some(uint(allIntent))
 
 	return NewWithIdentifier(id)
 }

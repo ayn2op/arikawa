@@ -34,7 +34,7 @@ func main() {
 		var resp api.InteractionResponse
 		switch d := e.Data.(type) {
 		case *discord.CommandInteraction:
-			content := option.NewNullableString("Pong: " + d.Options[0].String() + "!")
+			content := option.SomeNullable("Pong: " + d.Options[0].String() + "!")
 			resp = api.InteractionResponse{
 				Type: api.MessageInteractionWithSource,
 				Data: &api.InteractionResponseData{

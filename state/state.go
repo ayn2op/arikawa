@@ -632,7 +632,7 @@ func (s *State) Message(
 		wg sync.WaitGroup
 
 		c    *discord.Channel
-		cerr = store.ErrNotFound
+		cerr error
 	)
 
 	c, cerr = s.Cabinet.Channel(channelID)
@@ -675,7 +675,7 @@ func (s *State) Message(
 // When fetching the messages, those with the highest ID, will be fetched
 // first. The returned slice will be sorted from latest to oldest.
 func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Message, error) {
-	storeMessages, err := s.Cabinet.Messages(channelID)
+	storeMessages, _ := s.Cabinet.Messages(channelID)
 	if len(storeMessages) > 0 && s.tracksMessage(&storeMessages[0]) {
 		// Is the channel tiny?
 		s.fewMutex.Lock()
@@ -759,12 +759,12 @@ func (s *State) Messages(channelID discord.ChannelID, limit uint) ([]discord.Mes
 		}
 	}
 
-	msgs := append(storeMessages, apiMessages...)
-	if limit > 0 && len(msgs) > int(limit) {
-		msgs = msgs[:limit]
+	storeMessages = append(storeMessages, apiMessages...)
+	if limit > 0 && len(storeMessages) > int(limit) {
+		storeMessages = storeMessages[:limit]
 	}
 
-	return msgs, nil
+	return storeMessages, nil
 }
 
 ////

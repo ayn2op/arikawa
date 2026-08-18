@@ -58,7 +58,7 @@ type InteractionResponseData struct {
 	// Content are the message contents (up to 2000 characters).
 	//
 	// Required: one of content, file, embeds
-	Content option.NullableString `json:"content,omitempty"`
+	Content *option.Nullable[string] `json:"content,omitempty"`
 	// TTS is true if this is a TTS message.
 	TTS bool `json:"tts,omitempty"`
 	// Embeds contains embedded rich content.
@@ -84,9 +84,9 @@ type InteractionResponseData struct {
 	Choices AutocompleteChoices `json:"choices,omitempty"`
 
 	// CustomID used with the modal
-	CustomID option.NullableString `json:"custom_id,omitempty"`
+	CustomID *option.Nullable[string] `json:"custom_id,omitempty"`
 	// Title is the heading of the modal window
-	Title option.NullableString `json:"title,omitempty"`
+	Title *option.Nullable[string] `json:"title,omitempty"`
 }
 
 // NeedsMultipart returns true if the InteractionResponseData has files.
@@ -192,7 +192,7 @@ func (c *Client) InteractionResponse(
 
 type EditInteractionResponseData struct {
 	// Content are the new message contents (up to 2000 characters).
-	Content option.NullableString `json:"content,omitempty"`
+	Content *option.Nullable[string] `json:"content,omitempty"`
 	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.

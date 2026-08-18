@@ -281,7 +281,7 @@ func (c *Client) SendMessageReply(
 // https://discord.com/developers/docs/resources/channel#edit-message
 type EditMessageData struct {
 	// Content is the new message contents (up to 2000 characters).
-	Content option.NullableString `json:"content,omitempty"`
+	Content *option.Nullable[string] `json:"content,omitempty"`
 	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.
@@ -315,7 +315,7 @@ func (c *Client) EditText(
 	messageID discord.MessageID, content string) (*discord.Message, error) {
 
 	return c.EditMessageComplex(channelID, messageID, EditMessageData{
-		Content: option.NewNullableString(content),
+		Content: option.SomeNullable(content),
 	})
 }
 
@@ -342,7 +342,7 @@ func (c *Client) EditMessage(
 	var data EditMessageData
 
 	if len(content) > 0 {
-		data.Content = option.NewNullableString(content)
+		data.Content = option.SomeNullable(content)
 	}
 
 	if len(embeds) > 0 {

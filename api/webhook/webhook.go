@@ -233,7 +233,7 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 		}
 		sum += embed.Length()
 		if sum > 6000 {
-			return nil, &discord.OverboundError{sum, 6000, "sum of all text in embeds"}
+			return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of all text in embeds"}
 		}
 	}
 
@@ -267,7 +267,7 @@ func (c *Client) Message(messageID discord.MessageID) (*discord.Message, error) 
 // https://discord.com/developers/docs/resources/webhook#edit-webhook-message-jsonform-params
 type EditMessageData struct {
 	// Content is the new message contents (up to 2000 characters).
-	Content option.NullableString `json:"content,omitempty"`
+	Content *option.Nullable[string] `json:"content,omitempty"`
 	// Embeds contains embedded rich content.
 	Embeds *[]discord.Embed `json:"embeds,omitempty"`
 	// Components contains the new components to attach.
@@ -295,7 +295,7 @@ func (c *Client) EditMessage(messageID discord.MessageID, data EditMessageData) 
 			}
 			sum += e.Length()
 			if sum > 6000 {
-				return nil, &discord.OverboundError{sum, 6000, "sum of text in embeds"}
+				return nil, &discord.OverboundError{Count: sum, Max: 6000, Thing: "sum of text in embeds"}
 			}
 		}
 	}

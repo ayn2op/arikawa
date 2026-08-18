@@ -2,6 +2,7 @@ package cmdroute
 
 import (
 	"context"
+	"slices"
 
 	"github.com/ayn2op/arikawa/v3/api"
 	"github.com/ayn2op/arikawa/v3/api/webhook"
@@ -162,8 +163,8 @@ func (r *Router) callHandler(ev *discord.InteractionEvent, fn InteractionHandler
 	// when we call the handler, the middlewares are applied in the order they
 	// were added.
 	for r != nil {
-		for i := len(r.mws) - 1; i >= 0; i-- {
-			h = r.mws[i](h)
+		for _, middleware := range slices.Backward(r.mws) {
+			h = middleware(h)
 		}
 		r = r.parent
 	}

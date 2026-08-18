@@ -126,7 +126,7 @@ func newArgument(t reflect.Type, variadic bool) (*Argument, error) {
 	var ptr = false
 
 	if t.Kind() != reflect.Pointer {
-		typeI = reflect.PtrTo(t)
+		typeI = reflect.PointerTo(t)
 		ptr = true
 	}
 

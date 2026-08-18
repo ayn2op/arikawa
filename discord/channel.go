@@ -383,7 +383,7 @@ type ForumReaction struct {
 	EmojiID EmojiID `json:"emoji_id"`
 	// EmojiName is set when the emoji is a normal unicode emoji.
 	// Only one of EmojiID and EmojiName can be set
-	EmojiName option.String `json:"emoji_name"`
+	EmojiName option.Option[string] `json:"emoji_name"`
 }
 
 // https://discord.com/developers/docs/resources/channel#channel-object-sort-order-types

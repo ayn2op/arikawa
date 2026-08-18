@@ -10,12 +10,12 @@ func AdminOnly(ctx *bot.Context) func(any) error {
 	return func(ev any) error {
 		var channelID = infer.ChannelID(ev)
 		if !channelID.IsValid() {
-			return bot.Break
+			return bot.ErrBreak
 		}
 
 		var userID = infer.UserID(ev)
 		if !userID.IsValid() {
-			return bot.Break
+			return bot.ErrBreak
 		}
 
 		p, err := ctx.Permissions(channelID, userID)
@@ -23,7 +23,7 @@ func AdminOnly(ctx *bot.Context) func(any) error {
 			return nil
 		}
 
-		return bot.Break
+		return bot.ErrBreak
 	}
 }
 
@@ -36,12 +36,12 @@ func GuildOnly(ctx *bot.Context) func(any) error {
 
 		var channelID = infer.ChannelID(ev)
 		if !channelID.IsValid() {
-			return bot.Break
+			return bot.ErrBreak
 		}
 
 		c, err := ctx.Channel(channelID)
 		if err != nil || !c.GuildID.IsValid() {
-			return bot.Break
+			return bot.ErrBreak
 		}
 
 		return nil

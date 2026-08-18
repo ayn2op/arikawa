@@ -80,6 +80,6 @@ func main() {
 	}
 
 	if _, err := outFile.Write(b); err != nil {
-		log.Fatalln("failed to write to file:", err)
+		log.Panicln("failed to write to file:", err)
 	}
 }

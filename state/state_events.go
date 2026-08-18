@@ -327,19 +327,10 @@ func (s *State) onEvent(iface any) {
 			}
 		}
 
-	case *gateway.SessionsReplaceEvent:
-		// TODO
-
-	case *gateway.UserGuildSettingsUpdateEvent:
-		// TODO
-
 	case *gateway.UserSettingsUpdateEvent:
 		s.readyMu.Lock()
 		s.ready.UserSettings = &ev.UserSettings
 		s.readyMu.Unlock()
-
-	case *gateway.UserNoteUpdateEvent:
-		// TODO
 
 	case *gateway.UserUpdateEvent:
 		if err := s.Cabinet.MyselfSet(ev.User, true); err != nil {

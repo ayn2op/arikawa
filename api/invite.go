@@ -62,7 +62,7 @@ type CreateInviteData struct {
 	// never.
 	//
 	// Default:	86400 (24 hours)
-	MaxAge option.Uint `json:"max_age,omitempty"`
+	MaxAge option.Option[uint] `json:"max_age,omitempty"`
 	// MaxUses is the max number of uses or 0 for unlimited.
 	//
 	// Default:	0

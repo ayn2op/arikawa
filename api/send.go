@@ -42,7 +42,7 @@ type AllowedMentions struct {
 	Users []discord.UserID `json:"users,omitempty"`
 	// RepliedUser is used specifically for inline replies to specify, whether
 	// to mention the author of the message you are replying to or not.
-	RepliedUser option.Bool `json:"replied_user,omitempty"`
+	RepliedUser option.Option[bool] `json:"replied_user,omitempty"`
 }
 
 // AllowedMentionType is a constant that tells Discord what is allowed to parse

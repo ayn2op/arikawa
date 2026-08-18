@@ -135,7 +135,7 @@ func (l *Limiter) Acquire(ctx context.Context, path string) error {
 	}
 
 	// Deadline until the limiter is released.
-	until := time.Time{}
+	var until time.Time
 	now := time.Now()
 
 	if b.remaining == 0 && b.reset.After(now) {

@@ -108,13 +108,6 @@ func (errs ResetErrors) Unwrap() error {
 	return errs[len(errs)-1]
 }
 
-// append adds the error only if it is not nil.
-func (errs *ResetErrors) append(err error) {
-	if err != nil {
-		*errs = append(*errs, err)
-	}
-}
-
 // Noop is the value for a NoopStore.
 var Noop = NoopStore{}
 

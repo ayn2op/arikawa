@@ -357,19 +357,6 @@ func (s *State) Permissions(
 		m, merr = s.Cabinet.Member(ch.GuildID, userID)
 	}
 
-	switch {
-	case gerr != nil && merr != nil:
-		wg.Go(func() {
-			g, gerr = s.fetchGuild(ch.GuildID)
-		})
-
-		m, merr = s.fetchMember(ch.GuildID, userID)
-	case gerr != nil:
-		g, gerr = s.fetchGuild(ch.GuildID)
-	case merr != nil:
-		m, merr = s.fetchMember(ch.GuildID, userID)
-	}
-
 	if gerr != nil {
 		wg.Go(func() {
 			g, gerr = s.fetchGuild(ch.GuildID)

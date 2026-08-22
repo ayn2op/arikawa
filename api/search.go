@@ -27,10 +27,8 @@ type SearchResponse struct {
 
 // Search searches through a guild's messages. It only works for user accounts.
 func (c *Client) Search(guildID discord.GuildID, data SearchData) (SearchResponse, error) {
-	var resp SearchResponse
-
-	return resp, c.RequestJSON(
-		&resp, "GET",
+	return c.RequestJSON[SearchResponse](
+		"GET",
 		EndpointGuilds+guildID.String()+"/messages/search",
 		httputil.WithSchema(c, data),
 	)
@@ -39,10 +37,8 @@ func (c *Client) Search(guildID discord.GuildID, data SearchData) (SearchRespons
 // SearchDirectMessages searches through a direct message channel.
 // SearchData.ChannelID must be a valid channel ID.
 func (c *Client) SearchDirectMessages(data SearchData) (SearchResponse, error) {
-	var resp SearchResponse
-
-	return resp, c.RequestJSON(
-		&resp, "GET",
+	return c.RequestJSON[SearchResponse](
+		"GET",
 		EndpointChannels+data.ChannelID.String()+"/messages/search",
 		httputil.WithSchema(c, data),
 	)

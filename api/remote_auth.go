@@ -11,8 +11,8 @@ func (c *Client) ExchangeRemoteAuthTicket(ticket string) (string, error) {
 	body := struct {
 		Ticket string `json:"ticket"`
 	}{ticket}
-	var resp struct {
+	resp, err := c.RequestJSON[struct {
 		EncryptedToken string `json:"encrypted_token"`
-	}
-	return resp.EncryptedToken, c.RequestJSON(&resp, "POST", EndpointRemoteAuthLogin, httputil.WithJSONBody(body))
+	}]("POST", EndpointRemoteAuthLogin, httputil.WithJSONBody(body))
+	return resp.EncryptedToken, err
 }

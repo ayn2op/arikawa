@@ -106,16 +106,14 @@ type GuildsAfterData struct {
 //
 // This endpoint can be used only by bots in less than 10 guilds.
 func (c *Client) CreateGuild(data CreateGuildData) (*discord.Guild, error) {
-	var g *discord.Guild
-	return g, c.RequestJSON(&g, "POST", Endpoint+"guilds", httputil.WithJSONBody(data))
+	return c.RequestJSON[*discord.Guild]("POST", Endpoint+"guilds", httputil.WithJSONBody(data))
 }
 
 // Guild returns the guild object for the given id.
 //
 // ApproximateMembers and ApproximatePresences will not be set.
 func (c *Client) Guild(id discord.GuildID) (*discord.Guild, error) {
-	var g *discord.Guild
-	return g, c.RequestJSON(&g, "GET", EndpointGuilds+id.String())
+	return c.RequestJSON[*discord.Guild]("GET", EndpointGuilds+id.String())
 }
 
 // GuildPreview returns the guild preview object for the given id, even if the
@@ -123,17 +121,15 @@ func (c *Client) Guild(id discord.GuildID) (*discord.Guild, error) {
 //
 // This endpoint is only for public guilds.
 func (c *Client) GuildPreview(id discord.GuildID) (*discord.GuildPreview, error) {
-	var g *discord.GuildPreview
-	return g, c.RequestJSON(&g, "GET", EndpointGuilds+id.String()+"/preview")
+	return c.RequestJSON[*discord.GuildPreview]("GET", EndpointGuilds+id.String()+"/preview")
 }
 
 // GuildWithCount returns the guild object for the given id. This will also
 // set the ApproximateMembers and ApproximatePresences fields of the guild
 // struct.
 func (c *Client) GuildWithCount(id discord.GuildID) (*discord.Guild, error) {
-	var g *discord.Guild
-	return g, c.RequestJSON(
-		&g, "GET",
+	return c.RequestJSON[*discord.Guild](
+		"GET",
 		EndpointGuilds+id.String(),
 		httputil.WithSchema(c, url.Values{
 			"with_counts": {"true"},
@@ -306,9 +302,8 @@ func (c *Client) guildsRange(
 	param.Limit = limit
 	param.WithCounts = withCounts
 
-	var gs []discord.Guild
-	return gs, c.RequestJSON(
-		&gs, "GET",
+	return c.RequestJSON[[]discord.Guild](
+		"GET",
 		EndpointMe+"/guilds",
 		httputil.WithSchema(c, param),
 	)
@@ -389,9 +384,8 @@ type ModifyGuildData struct {
 //
 // Fires a Guild Update Gateway event.
 func (c *Client) ModifyGuild(id discord.GuildID, data ModifyGuildData) (*discord.Guild, error) {
-	var g *discord.Guild
-	return g, c.RequestJSON(
-		&g, "PATCH",
+	return c.RequestJSON[*discord.Guild](
+		"PATCH",
 		EndpointGuilds+id.String(),
 		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
@@ -408,8 +402,7 @@ func (c *Client) DeleteGuild(id discord.GuildID) error {
 // VoiceRegionsGuild is the same as /voice, but returns VIP ones as well if
 // available.
 func (c *Client) VoiceRegionsGuild(guildID discord.GuildID) ([]discord.VoiceRegion, error) {
-	var vrs []discord.VoiceRegion
-	return vrs, c.RequestJSON(&vrs, "GET", EndpointGuilds+guildID.String()+"/regions")
+	return c.RequestJSON[[]discord.VoiceRegion]("GET", EndpointGuilds+guildID.String()+"/regions")
 }
 
 // https://discord.com/developers/docs/resources/audit-log#get-guild-audit-log-query-string-parameters
@@ -436,10 +429,8 @@ func (c *Client) AuditLog(guildID discord.GuildID, data AuditLogData) (*discord.
 		data.Limit = 100
 	}
 
-	var audit *discord.AuditLog
-
-	return audit, c.RequestJSON(
-		&audit, "GET",
+	return c.RequestJSON[*discord.AuditLog](
+		"GET",
 		EndpointGuilds+guildID.String()+"/audit-logs",
 		httputil.WithSchema(c, data),
 	)
@@ -449,9 +440,7 @@ func (c *Client) AuditLog(guildID discord.GuildID, data AuditLogData) (*discord.
 //
 // Requires the MANAGE_GUILD permission.
 func (c *Client) Integrations(guildID discord.GuildID) ([]discord.Integration, error) {
-
-	var ints []discord.Integration
-	return ints, c.RequestJSON(&ints, "GET", EndpointGuilds+guildID.String()+"/integrations")
+	return c.RequestJSON[[]discord.Integration]("GET", EndpointGuilds+guildID.String()+"/integrations")
 }
 
 // AttachIntegration attaches an integration object from the current user to
@@ -525,9 +514,7 @@ func (c *Client) SyncIntegration(
 // Requires the MANAGE_GUILD permission.
 func (c *Client) GuildWidgetSettings(
 	guildID discord.GuildID) (*discord.GuildWidgetSettings, error) {
-
-	var ge *discord.GuildWidgetSettings
-	return ge, c.RequestJSON(&ge, "GET", EndpointGuilds+guildID.String()+"/widget")
+	return c.RequestJSON[*discord.GuildWidgetSettings]("GET", EndpointGuilds+guildID.String()+"/widget")
 }
 
 // ModifyGuildWidgetData is the structure to modify a guild widget object for
@@ -548,10 +535,8 @@ type ModifyGuildWidgetData struct {
 // Requires the MANAGE_GUILD permission.
 func (c *Client) ModifyGuildWidget(
 	guildID discord.GuildID, data ModifyGuildWidgetData) (*discord.GuildWidgetSettings, error) {
-
-	var w *discord.GuildWidgetSettings
-	return w, c.RequestJSON(
-		&w, "PATCH",
+	return c.RequestJSON[*discord.GuildWidgetSettings](
+		"PATCH",
 		EndpointGuilds+guildID.String()+"/widget",
 		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
@@ -559,9 +544,8 @@ func (c *Client) ModifyGuildWidget(
 
 // GuildWidget returns the widget for the guild.
 func (c *Client) GuildWidget(guildID discord.GuildID) (*discord.GuildWidget, error) {
-	var w *discord.GuildWidget
-	return w, c.RequestJSON(
-		&w, "GET",
+	return c.RequestJSON[*discord.GuildWidget](
+		"GET",
 		EndpointGuilds+guildID.String()+"/widget.json")
 }
 
@@ -571,8 +555,7 @@ func (c *Client) GuildWidget(guildID discord.GuildID) (*discord.GuildWidget, err
 //
 // Requires MANAGE_GUILD.
 func (c *Client) GuildVanityInvite(guildID discord.GuildID) (*discord.Invite, error) {
-	var inv *discord.Invite
-	return inv, c.RequestJSON(&inv, "GET", EndpointGuilds+guildID.String()+"/vanity-url")
+	return c.RequestJSON[*discord.Invite]("GET", EndpointGuilds+guildID.String()+"/vanity-url")
 }
 
 // https://discord.com/developers/docs/resources/guild#get-guild-widget-image-widget-style-options

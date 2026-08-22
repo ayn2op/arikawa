@@ -27,10 +27,8 @@ type CreateStageInstanceData struct {
 // It requires the user to be a moderator of the Stage channel.
 func (c *Client) CreateStageInstance(
 	data CreateStageInstanceData) (*discord.StageInstance, error) {
-
-	var s *discord.StageInstance
-	return s, c.RequestJSON(
-		&s, "POST",
+	return c.RequestJSON[*discord.StageInstance](
+		"POST",
 		EndpointStageInstances,
 		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)

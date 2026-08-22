@@ -163,9 +163,8 @@ func (c *Client) reactionsRange(
 	param.After = after
 	param.Limit = limit
 
-	var users []discord.User
-	return users, c.RequestJSON(
-		&users, "GET", EndpointChannels+channelID.String()+
+	return c.RequestJSON[[]discord.User](
+		"GET", EndpointChannels+channelID.String()+
 			"/messages/"+messageID.String()+
 			"/reactions/"+emoji.PathString(),
 		httputil.WithSchema(c, param),

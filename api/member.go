@@ -10,8 +10,7 @@ const MaxMemberFetchLimit = 1000
 
 // Member returns a guild member object for the specified user.
 func (c *Client) Member(guildID discord.GuildID, userID discord.UserID) (*discord.Member, error) {
-	var m *discord.Member
-	return m, c.RequestJSON(&m, "GET", EndpointGuilds+guildID.String()+"/members/"+userID.String())
+	return c.RequestJSON[*discord.Member]("GET", EndpointGuilds+guildID.String()+"/members/"+userID.String())
 }
 
 // Members returns a list of members of the guild with the passed id. This
@@ -95,9 +94,8 @@ func (c *Client) membersAfter(
 	param.Limit = limit
 	param.After = after
 
-	var mems []discord.Member
-	return mems, c.RequestJSON(
-		&mems, "GET",
+	return c.RequestJSON[[]discord.Member](
+		"GET",
 		EndpointGuilds+guildID.String()+"/members",
 		httputil.WithSchema(c, param),
 	)
@@ -138,10 +136,8 @@ type AddMemberData struct {
 // guild with CREATE_INSTANT_INVITE permission.
 func (c *Client) AddMember(
 	guildID discord.GuildID, userID discord.UserID, data AddMemberData) (*discord.Member, error) {
-
-	var mem *discord.Member
-	return mem, c.RequestJSON(
-		&mem, "PUT",
+	return c.RequestJSON[*discord.Member](
+		"PUT",
 		EndpointGuilds+guildID.String()+"/members/"+userID.String(),
 		httputil.WithJSONBody(data),
 	)
@@ -202,6 +198,10 @@ type PruneCountData struct {
 	IncludedRoles []discord.RoleID `schema:"include_roles,omitempty"`
 }
 
+type pruneResponse struct {
+	Pruned uint `json:"pruned"`
+}
+
 // PruneCount returns the number of members that would be removed in a prune
 // operation. Days must be 1 or more, default 7.
 //
@@ -216,15 +216,12 @@ func (c *Client) PruneCount(guildID discord.GuildID, data PruneCountData) (uint,
 		data.Days = 7
 	}
 
-	var resp struct {
-		Pruned uint `json:"pruned"`
-	}
-
-	return resp.Pruned, c.RequestJSON(
-		&resp, "GET",
+	resp, err := c.RequestJSON[pruneResponse](
+		"GET",
 		EndpointGuilds+guildID.String()+"/prune",
 		httputil.WithSchema(c, data),
 	)
+	return resp.Pruned, err
 }
 
 // https://discord.com/developers/docs/resources/guild#begin-guild-prune-query-string-params
@@ -255,15 +252,12 @@ func (c *Client) Prune(guildID discord.GuildID, data PruneData) (uint, error) {
 		data.Days = 7
 	}
 
-	var resp struct {
-		Pruned uint `json:"pruned"`
-	}
-
-	return resp.Pruned, c.RequestJSON(
-		&resp, "POST",
+	resp, err := c.RequestJSON[pruneResponse](
+		"POST",
 		EndpointGuilds+guildID.String()+"/prune",
 		httputil.WithSchema(c, data), httputil.WithHeaders(data.Header()),
 	)
+	return resp.Pruned, err
 }
 
 // Kick removes a member from a guild.
@@ -285,9 +279,8 @@ func (c *Client) Kick(
 //
 // Requires the BAN_MEMBERS permission.
 func (c *Client) Bans(guildID discord.GuildID) ([]discord.Ban, error) {
-	var bans []discord.Ban
-	return bans, c.RequestJSON(
-		&bans, "GET",
+	return c.RequestJSON[[]discord.Ban](
+		"GET",
 		EndpointGuilds+guildID.String()+"/bans",
 	)
 }
@@ -296,9 +289,8 @@ func (c *Client) Bans(guildID discord.GuildID) ([]discord.Ban, error) {
 //
 // Requires the BAN_MEMBERS permission.
 func (c *Client) GetBan(guildID discord.GuildID, userID discord.UserID) (*discord.Ban, error) {
-	var ban *discord.Ban
-	return ban, c.RequestJSON(
-		&ban, "GET",
+	return c.RequestJSON[*discord.Ban](
+		"GET",
 		EndpointGuilds+guildID.String()+"/bans/"+userID.String(),
 	)
 }

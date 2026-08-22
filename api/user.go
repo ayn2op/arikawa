@@ -13,16 +13,14 @@ var (
 
 // User returns a user object for a given user ID.
 func (c *Client) User(userID discord.UserID) (*discord.User, error) {
-	var u *discord.User
-	return u, c.RequestJSON(&u, "GET", EndpointUsers+userID.String())
+	return c.RequestJSON[*discord.User]("GET", EndpointUsers+userID.String())
 }
 
 // Me returns the user object of the requester's account. For OAuth2, this
 // requires the identify scope, which will return the object without an email,
 // and optionally the email scope, which returns the object with an email.
 func (c *Client) Me() (*discord.User, error) {
-	var me *discord.User
-	return me, c.RequestJSON(&me, "GET", EndpointMe)
+	return c.RequestJSON[*discord.User]("GET", EndpointMe)
 }
 
 // https://discord.com/developers/docs/resources/user#modify-current-user-json-params
@@ -38,9 +36,7 @@ type ModifyCurrentUserData struct {
 
 // ModifyCurrentUser modifies the requester's user account settings.
 func (c *Client) ModifyCurrentUser(data ModifyCurrentUserData) (*discord.User, error) {
-	var u *discord.User
-	return u, c.RequestJSON(
-		&u,
+	return c.RequestJSON[*discord.User](
 		"PATCH", EndpointMe,
 		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
@@ -69,8 +65,7 @@ func (c *Client) ModifyCurrentMember(
 // longer a supported method of getting recent DMs, and will return an empty
 // array.
 func (c *Client) PrivateChannels() ([]discord.Channel, error) {
-	var dms []discord.Channel
-	return dms, c.RequestJSON(&dms, "GET", EndpointMe+"/channels")
+	return c.RequestJSON[[]discord.Channel]("GET", EndpointMe+"/channels")
 }
 
 // CreatePrivateChannel creates a new DM channel with a user.
@@ -81,25 +76,22 @@ func (c *Client) CreatePrivateChannel(recipientID discord.UserID) (*discord.Chan
 
 	param.RecipientID = recipientID
 
-	var dm *discord.Channel
-	return dm, c.RequestJSON(&dm, "POST", EndpointMe+"/channels", httputil.WithJSONBody(param))
+	return c.RequestJSON[*discord.Channel]("POST", EndpointMe+"/channels", httputil.WithJSONBody(param))
 }
 
 // UserConnections returns a list of connection objects. Requires the
 // connections OAuth2 scope.
 func (c *Client) UserConnections() ([]discord.Connection, error) {
-	var conn []discord.Connection
-	return conn, c.RequestJSON(&conn, "GET", EndpointMe+"/connections")
+	return c.RequestJSON[[]discord.Connection]("GET", EndpointMe+"/connections")
 }
 
 // Note gets the note for the given user. This endpoint is undocumented and
 // might only work for user accounts.
 func (c *Client) Note(userID discord.UserID) (string, error) {
-	var body struct {
+	body, err := c.RequestJSON[struct {
 		Note string `json:"note"`
-	}
-
-	return body.Note, c.RequestJSON(&body, "GET", EndpointMe+"/notes/"+userID.String())
+	}]("GET", EndpointMe+"/notes/"+userID.String())
+	return body.Note, err
 }
 
 // SetNote sets a note for the user. This endpoint is undocumented and might

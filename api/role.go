@@ -42,8 +42,7 @@ func (c *Client) RemoveRole(
 
 // Roles returns a list of role objects for the guild.
 func (c *Client) Roles(guildID discord.GuildID) ([]discord.Role, error) {
-	var roles []discord.Role
-	return roles, c.RequestJSON(&roles, "GET", EndpointGuilds+guildID.String()+"/roles")
+	return c.RequestJSON[[]discord.Role]("GET", EndpointGuilds+guildID.String()+"/roles")
 }
 
 // https://discord.com/developers/docs/resources/guild#create-guild-role-json-params
@@ -88,9 +87,8 @@ type CreateRoleData struct {
 //
 // Fires a Guild Role Create Gateway event.
 func (c *Client) CreateRole(guildID discord.GuildID, data CreateRoleData) (*discord.Role, error) {
-	var role *discord.Role
-	return role, c.RequestJSON(
-		&role, "POST",
+	return c.RequestJSON[*discord.Role](
+		"POST",
 		EndpointGuilds+guildID.String()+"/roles",
 		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
@@ -118,9 +116,8 @@ type (
 //
 // Fires multiple Guild Role Update Gateway events.
 func (c *Client) MoveRoles(guildID discord.GuildID, data MoveRolesData) ([]discord.Role, error) {
-	var roles []discord.Role
-	return roles, c.RequestJSON(
-		&roles, "PATCH",
+	return c.RequestJSON[[]discord.Role](
+		"PATCH",
 		EndpointGuilds+guildID.String()+"/roles",
 		httputil.WithJSONBody(data.Roles), httputil.WithHeaders(data.Header()),
 	)
@@ -157,10 +154,8 @@ type ModifyRoleData struct {
 // Requires the MANAGE_ROLES permission.
 func (c *Client) ModifyRole(
 	guildID discord.GuildID, roleID discord.RoleID, data ModifyRoleData) (*discord.Role, error) {
-
-	var role *discord.Role
-	return role, c.RequestJSON(
-		&role, "PATCH",
+	return c.RequestJSON[*discord.Role](
+		"PATCH",
 		EndpointGuilds+guildID.String()+"/roles/"+roleID.String(),
 		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)

@@ -12,9 +12,8 @@ var EndpointInvites = Endpoint + "invites/"
 //
 // ApproxMembers will not get filled.
 func (c *Client) Invite(code string) (*discord.Invite, error) {
-	var inv *discord.Invite
-	return inv, c.RequestJSON(
-		&inv, "GET",
+	return c.RequestJSON[*discord.Invite](
+		"GET",
 		EndpointInvites+code,
 	)
 }
@@ -28,9 +27,8 @@ func (c *Client) InviteWithCounts(code string) (*discord.Invite, error) {
 
 	params.WithCounts = true
 
-	var inv *discord.Invite
-	return inv, c.RequestJSON(
-		&inv, "GET",
+	return c.RequestJSON[*discord.Invite](
+		"GET",
 		EndpointInvites+code,
 		httputil.WithSchema(c, params),
 	)
@@ -41,8 +39,7 @@ func (c *Client) InviteWithCounts(code string) (*discord.Invite, error) {
 //
 // Requires the MANAGE_CHANNELS permission.
 func (c *Client) ChannelInvites(channelID discord.ChannelID) ([]discord.Invite, error) {
-	var invs []discord.Invite
-	return invs, c.RequestJSON(&invs, "GET",
+	return c.RequestJSON[[]discord.Invite]("GET",
 		EndpointChannels+channelID.String()+"/invites")
 }
 
@@ -51,8 +48,7 @@ func (c *Client) ChannelInvites(channelID discord.ChannelID) ([]discord.Invite, 
 //
 // Requires the MANAGE_GUILD permission.
 func (c *Client) GuildInvites(guildID discord.GuildID) ([]discord.Invite, error) {
-	var invs []discord.Invite
-	return invs, c.RequestJSON(&invs, "GET",
+	return c.RequestJSON[[]discord.Invite]("GET",
 		EndpointGuilds+guildID.String()+"/invites")
 }
 
@@ -86,10 +82,8 @@ type CreateInviteData struct {
 // Requires the CREATE_INSTANT_INVITE permission.
 func (c *Client) CreateInvite(
 	channelID discord.ChannelID, data CreateInviteData) (*discord.Invite, error) {
-
-	var inv *discord.Invite
-	return inv, c.RequestJSON(
-		&inv, "POST",
+	return c.RequestJSON[*discord.Invite](
+		"POST",
 		EndpointChannels+channelID.String()+"/invites",
 		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
@@ -106,8 +100,7 @@ type JoinedInvite struct {
 // JoinInvite joins a guild using the given invite code. This endpoint is
 // undocumented.
 func (c *Client) JoinInvite(code string) (*JoinedInvite, error) {
-	var inv *JoinedInvite
-	return inv, c.RequestJSON(&inv, "POST", EndpointInvites+code)
+	return c.RequestJSON[*JoinedInvite]("POST", EndpointInvites+code)
 }
 
 // DeleteInvite deletes an invite.
@@ -117,9 +110,7 @@ func (c *Client) JoinInvite(code string) (*JoinedInvite, error) {
 //
 // Fires an Invite Delete Gateway event.
 func (c *Client) DeleteInvite(code string, reason AuditLogReason) (*discord.Invite, error) {
-	var inv *discord.Invite
-	return inv, c.RequestJSON(
-		&inv,
+	return c.RequestJSON[*discord.Invite](
 		"DELETE", EndpointInvites+code,
 		httputil.WithHeaders(reason.Header()),
 	)

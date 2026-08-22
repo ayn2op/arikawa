@@ -10,8 +10,7 @@ var EndpointChannels = Endpoint + "channels/"
 
 // Channels returns a list of guild channel objects.
 func (c *Client) Channels(guildID discord.GuildID) ([]discord.Channel, error) {
-	var chs []discord.Channel
-	return chs, c.RequestJSON(&chs, "GET", EndpointGuilds+guildID.String()+"/channels")
+	return c.RequestJSON[[]discord.Channel]("GET", EndpointGuilds+guildID.String()+"/channels")
 }
 
 // https://discord.com/developers/docs/resources/guild#create-guild-channel-json-params
@@ -90,10 +89,8 @@ type CreateChannelData struct {
 // Fires a ChannelCreate Gateway event.
 func (c *Client) CreateChannel(
 	guildID discord.GuildID, data CreateChannelData) (*discord.Channel, error) {
-
-	var ch *discord.Channel
-	return ch, c.RequestJSON(
-		&ch, "POST",
+	return c.RequestJSON[*discord.Channel](
+		"POST",
 		EndpointGuilds+guildID.String()+"/channels",
 		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
@@ -135,8 +132,7 @@ func (c *Client) MoveChannels(guildID discord.GuildID, data MoveChannelsData) er
 
 // Channel gets a channel by ID. Returns a channel object.
 func (c *Client) Channel(channelID discord.ChannelID) (*discord.Channel, error) {
-	var channel *discord.Channel
-	return channel, c.RequestJSON(&channel, "GET", EndpointChannels+channelID.String())
+	return c.RequestJSON[*discord.Channel]("GET", EndpointChannels+channelID.String())
 }
 
 // https://discord.com/developers/docs/resources/channel#modify-channel-json-params
@@ -304,8 +300,7 @@ func (c *Client) Typing(channelID discord.ChannelID) error {
 // PinnedMessages returns all pinned messages in the channel as an array of
 // message objects.
 func (c *Client) PinnedMessages(channelID discord.ChannelID) ([]discord.Message, error) {
-	var pinned []discord.Message
-	return pinned, c.RequestJSON(&pinned, "GET", EndpointChannels+channelID.String()+"/pins")
+	return c.RequestJSON[[]discord.Message]("GET", EndpointChannels+channelID.String()+"/pins")
 }
 
 // PinMessage pins a message in a channel.
@@ -370,7 +365,7 @@ type Ack struct {
 // write to the ack variable passed in. If this method is called asynchronously,
 // then ack should be mutex guarded.
 func (c *Client) Ack(channelID discord.ChannelID, messageID discord.MessageID, ack *Ack) error {
-	return c.RequestJSON(
+	return c.RequestJSONInto(
 		ack, "POST",
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+"/ack",
 		httputil.WithJSONBody(ack),
@@ -416,9 +411,8 @@ func (c *Client) StartThreadWithMessage(
 
 	data.Type = 0
 
-	var ch *discord.Channel
-	return ch, c.RequestJSON(
-		&ch, "POST",
+	return c.RequestJSON[*discord.Channel](
+		"POST",
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+"/threads",
 		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
@@ -430,10 +424,8 @@ func (c *Client) StartThreadWithMessage(
 // Fires a Thread Create Gateway event.
 func (c *Client) StartThreadWithoutMessage(
 	channelID discord.ChannelID, data StartThreadData) (*discord.Channel, error) {
-
-	var ch *discord.Channel
-	return ch, c.RequestJSON(
-		&ch, "POST",
+	return c.RequestJSON[*discord.Channel](
+		"POST",
 		EndpointChannels+channelID.String()+"/threads",
 		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)
@@ -483,17 +475,13 @@ func (c *Client) RemoveThreadMember(threadID discord.ChannelID, userID discord.U
 // This endpoint is restricted according to whether the GUILD_MEMBERS
 // Privileged Intent is enabled for your application.
 func (c *Client) ThreadMembers(threadID discord.ChannelID) ([]discord.ThreadMember, error) {
-	var m []discord.ThreadMember
-	return m, c.RequestJSON(&m, "GET", EndpointChannels+threadID.String()+"/thread-members")
+	return c.RequestJSON[[]discord.ThreadMember]("GET", EndpointChannels+threadID.String()+"/thread-members")
 }
 
 // ThreadMember returns a thread member for the user ID if the user is a member of the thread.
 func (c *Client) ThreadMember(
 	threadID discord.ChannelID, userID discord.UserID) (*discord.ThreadMember, error) {
-
-	var m *discord.ThreadMember
-	return m, c.RequestJSON(
-		&m,
+	return c.RequestJSON[*discord.ThreadMember](
 		"GET",
 		EndpointChannels+threadID.String()+"/thread-members/"+userID.String(),
 	)
@@ -511,8 +499,7 @@ type ActiveThreads struct {
 // ActiveThreads returns all the active threads in the guild, including public
 // and private threads.
 func (c *Client) ActiveThreads(guildID discord.GuildID) (*ActiveThreads, error) {
-	var t *ActiveThreads
-	return t, c.RequestJSON(&t, "GET", EndpointGuilds+guildID.String()+"/threads/active")
+	return c.RequestJSON[*ActiveThreads]("GET", EndpointGuilds+guildID.String()+"/threads/active")
 }
 
 // https://discord.com/developers/docs/resources/channel#list-public-archived-threads-response-body
@@ -551,9 +538,8 @@ func (c *Client) PublicArchivedThreads(
 	}
 	param.Limit = limit
 
-	var t *ArchivedThreads
-	return t, c.RequestJSON(
-		&t, "GET",
+	return c.RequestJSON[*ArchivedThreads](
+		"GET",
 		EndpointChannels+channelID.String()+"/threads/archived/public",
 		httputil.WithSchema(c, param),
 	)
@@ -579,9 +565,8 @@ func (c *Client) PrivateArchivedThreads(
 	}
 	param.Limit = limit
 
-	var t *ArchivedThreads
-	return t, c.RequestJSON(
-		&t, "GET",
+	return c.RequestJSON[*ArchivedThreads](
+		"GET",
 		EndpointChannels+channelID.String()+"/threads/archived/private",
 		httputil.WithSchema(c, param),
 	)
@@ -607,9 +592,8 @@ func (c *Client) JoinedPrivateArchivedThreads(
 	}
 	param.Limit = limit
 
-	var t *ArchivedThreads
-	return t, c.RequestJSON(
-		&t, "GET",
+	return c.RequestJSON[*ArchivedThreads](
+		"GET",
 		EndpointChannels+channelID.String()+"/users/@me/threads/archived/private",
 		httputil.WithSchema(c, param),
 	)
@@ -663,9 +647,8 @@ type (
 )
 
 func (c *Client) SearchThreads(channelID discord.ChannelID, data SearchThreadsData) (SearchThreadsResponse, error) {
-	var resp SearchThreadsResponse
-	return resp, c.RequestJSON(
-		&resp, "GET",
+	return c.RequestJSON[SearchThreadsResponse](
+		"GET",
 		EndpointChannels+channelID.String()+"/threads/search",
 		httputil.WithSchema(c, data),
 	)

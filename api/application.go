@@ -12,9 +12,8 @@ var EndpointApplications = Endpoint + "applications/"
 // CurrentApplication returns the current bot account's Discord application. It
 // can be used to get the application ID.
 func (c *Client) CurrentApplication() (*discord.Application, error) {
-	var app *discord.Application
-	return app, c.RequestJSON(
-		&app, "GET",
+	return c.RequestJSON[*discord.Application](
+		"GET",
 		Endpoint+"/oauth2/applications/@me",
 	)
 }
@@ -77,29 +76,24 @@ func (c *CreateCommandData) UnmarshalJSON(data []byte) error {
 }
 
 func (c *Client) Commands(appID discord.AppID) ([]discord.Command, error) {
-	var cmds []discord.Command
-	return cmds, c.RequestJSON(
-		&cmds, "GET",
+	return c.RequestJSON[[]discord.Command](
+		"GET",
 		EndpointApplications+appID.String()+"/commands",
 	)
 }
 
 func (c *Client) Command(
 	appID discord.AppID, commandID discord.CommandID) (*discord.Command, error) {
-
-	var cmd *discord.Command
-	return cmd, c.RequestJSON(
-		&cmd, "GET",
+	return c.RequestJSON[*discord.Command](
+		"GET",
 		EndpointApplications+appID.String()+"/commands/"+commandID.String(),
 	)
 }
 
 func (c *Client) CreateCommand(
 	appID discord.AppID, data CreateCommandData) (*discord.Command, error) {
-
-	var cmd *discord.Command
-	return cmd, c.RequestJSON(
-		&cmd, "POST",
+	return c.RequestJSON[*discord.Command](
+		"POST",
 		EndpointApplications+appID.String()+"/commands",
 		httputil.WithJSONBody(data),
 	)
@@ -108,10 +102,8 @@ func (c *Client) CreateCommand(
 func (c *Client) EditCommand(
 	appID discord.AppID,
 	commandID discord.CommandID, data CreateCommandData) (*discord.Command, error) {
-
-	var cmd *discord.Command
-	return cmd, c.RequestJSON(
-		&cmd, "PATCH",
+	return c.RequestJSON[*discord.Command](
+		"PATCH",
 		EndpointApplications+appID.String()+"/commands/"+commandID.String(),
 		httputil.WithJSONBody(data),
 	)
@@ -132,20 +124,16 @@ func (c *Client) DeleteCommand(appID discord.AppID, commandID discord.CommandID)
 // command create limits.
 func (c *Client) BulkOverwriteCommands(
 	appID discord.AppID, commands []CreateCommandData) ([]discord.Command, error) {
-
-	var cmds []discord.Command
-	return cmds, c.RequestJSON(
-		&cmds, "PUT",
+	return c.RequestJSON[[]discord.Command](
+		"PUT",
 		EndpointApplications+appID.String()+"/commands",
 		httputil.WithJSONBody(commands))
 }
 
 func (c *Client) GuildCommands(
 	appID discord.AppID, guildID discord.GuildID) ([]discord.Command, error) {
-
-	var cmds []discord.Command
-	return cmds, c.RequestJSON(
-		&cmds, "GET",
+	return c.RequestJSON[[]discord.Command](
+		"GET",
 		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+"/commands",
 	)
 }
@@ -153,10 +141,8 @@ func (c *Client) GuildCommands(
 func (c *Client) GuildCommand(
 	appID discord.AppID,
 	guildID discord.GuildID, commandID discord.CommandID) (*discord.Command, error) {
-
-	var cmd *discord.Command
-	return cmd, c.RequestJSON(
-		&cmd, "GET",
+	return c.RequestJSON[*discord.Command](
+		"GET",
 		EndpointApplications+appID.String()+
 			"/guilds/"+guildID.String()+
 			"/commands/"+commandID.String(),
@@ -166,10 +152,8 @@ func (c *Client) GuildCommand(
 func (c *Client) CreateGuildCommand(
 	appID discord.AppID,
 	guildID discord.GuildID, data CreateCommandData) (*discord.Command, error) {
-
-	var cmd *discord.Command
-	return cmd, c.RequestJSON(
-		&cmd, "POST",
+	return c.RequestJSON[*discord.Command](
+		"POST",
 		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+"/commands",
 		httputil.WithJSONBody(data),
 	)
@@ -178,10 +162,8 @@ func (c *Client) CreateGuildCommand(
 func (c *Client) EditGuildCommand(
 	appID discord.AppID, guildID discord.GuildID,
 	commandID discord.CommandID, data CreateCommandData) (*discord.Command, error) {
-
-	var cmd *discord.Command
-	return cmd, c.RequestJSON(
-		&cmd, "PATCH",
+	return c.RequestJSON[*discord.Command](
+		"PATCH",
 		EndpointApplications+appID.String()+
 			"/guilds/"+guildID.String()+
 			"/commands/"+commandID.String(),
@@ -205,10 +187,8 @@ func (c *Client) DeleteGuildCommand(
 func (c *Client) BulkOverwriteGuildCommands(
 	appID discord.AppID,
 	guildID discord.GuildID, commands []CreateCommandData) ([]discord.Command, error) {
-
-	var cmds []discord.Command
-	return cmds, c.RequestJSON(
-		&cmds, "PUT",
+	return c.RequestJSON[[]discord.Command](
+		"PUT",
 		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+"/commands",
 		httputil.WithJSONBody(commands))
 }
@@ -217,10 +197,8 @@ func (c *Client) BulkOverwriteGuildCommands(
 // application in a guild.
 func (c *Client) GuildCommandPermissions(
 	appID discord.AppID, guildID discord.GuildID) ([]discord.GuildCommandPermissions, error) {
-
-	var perms []discord.GuildCommandPermissions
-	return perms, c.RequestJSON(
-		&perms, "GET",
+	return c.RequestJSON[[]discord.GuildCommandPermissions](
+		"GET",
 		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+"/commands/permissions",
 	)
 }
@@ -230,10 +208,8 @@ func (c *Client) GuildCommandPermissions(
 func (c *Client) CommandPermissions(
 	appID discord.AppID, guildID discord.GuildID,
 	commandID discord.CommandID) (*discord.GuildCommandPermissions, error) {
-
-	var perms *discord.GuildCommandPermissions
-	return perms, c.RequestJSON(
-		&perms, "GET",
+	return c.RequestJSON[*discord.GuildCommandPermissions](
+		"GET",
 		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+
 			"/commands/"+commandID.String()+"/permissions",
 	)
@@ -256,9 +232,8 @@ func (c *Client) EditCommandPermissions(
 
 	data := editCommandPermissionsData{Permissions: permissions}
 
-	var perms *discord.GuildCommandPermissions
-	return perms, c.RequestJSON(
-		&perms, "PUT",
+	return c.RequestJSON[*discord.GuildCommandPermissions](
+		"PUT",
 		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+
 			"/commands/"+commandID.String()+"/permissions",
 		httputil.WithJSONBody(data),
@@ -280,10 +255,8 @@ type BatchEditCommandPermissionsData struct {
 func (c *Client) BatchEditCommandPermissions(
 	appID discord.AppID, guildID discord.GuildID,
 	data []BatchEditCommandPermissionsData) ([]discord.GuildCommandPermissions, error) {
-
-	var perms []discord.GuildCommandPermissions
-	return perms, c.RequestJSON(
-		&perms, "PUT",
+	return c.RequestJSON[[]discord.GuildCommandPermissions](
+		"PUT",
 		EndpointApplications+appID.String()+"/guilds/"+guildID.String()+"/commands/permissions",
 		httputil.WithJSONBody(data),
 	)

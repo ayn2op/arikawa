@@ -136,15 +136,13 @@ func (c *Client) WithContext(ctx context.Context) *Client {
 
 // Get gets the webhook.
 func (c *Client) Get() (*discord.Webhook, error) {
-	var w *discord.Webhook
-	return w, c.RequestJSON(&w, "GET", api.EndpointWebhooks+c.ID.String()+"/"+c.Token)
+	return c.RequestJSON[*discord.Webhook]("GET", api.EndpointWebhooks+c.ID.String()+"/"+c.Token)
 }
 
 // Modify modifies the webhook.
 func (c *Client) Modify(data api.ModifyWebhookData) (*discord.Webhook, error) {
-	var w *discord.Webhook
-	return w, c.RequestJSON(
-		&w, "PATCH",
+	return c.RequestJSON[*discord.Webhook](
+		"PATCH",
 		api.EndpointWebhooks+c.ID.String()+"/"+c.Token,
 		httputil.WithJSONBody(data),
 	)
@@ -258,9 +256,8 @@ func (c *Client) execute(data ExecuteData, wait bool) (*discord.Message, error) 
 
 // Message returns a previously-sent webhook message from the same token.
 func (c *Client) Message(messageID discord.MessageID) (*discord.Message, error) {
-	var m *discord.Message
-	return m, c.RequestJSON(
-		&m, "GET",
+	return c.RequestJSON[*discord.Message](
+		"GET",
 		api.EndpointWebhooks+c.ID.String()+"/"+c.Token+"/messages/"+messageID.String())
 }
 

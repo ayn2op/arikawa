@@ -174,9 +174,8 @@ func (c *Client) messagesRange(
 	param.Around = around
 	param.Limit = limit
 
-	var msgs []discord.Message
-	return msgs, c.RequestJSON(
-		&msgs, "GET",
+	return c.RequestJSON[[]discord.Message](
+		"GET",
 		EndpointChannels+channelID.String()+"/messages",
 		httputil.WithSchema(c, param),
 	)
@@ -188,9 +187,7 @@ func (c *Client) messagesRange(
 // READ_MESSAGE_HISTORY permission to be present on the current user.
 func (c *Client) Message(
 	channelID discord.ChannelID, messageID discord.MessageID) (*discord.Message, error) {
-
-	var msg *discord.Message
-	return msg, c.RequestJSON(&msg, "GET",
+	return c.RequestJSON[*discord.Message]("GET",
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String())
 }
 
@@ -378,11 +375,7 @@ func (c *Client) EditMessageComplex(
 // or additionally the MANAGE_MESSAGES permission for all other messages.
 func (c *Client) CrosspostMessage(
 	channelID discord.ChannelID, messageID discord.MessageID) (*discord.Message, error) {
-
-	var msg *discord.Message
-
-	return msg, c.RequestJSON(
-		&msg,
+	return c.RequestJSON[*discord.Message](
 		"POST",
 		EndpointChannels+channelID.String()+"/messages/"+messageID.String()+"/crosspost",
 	)

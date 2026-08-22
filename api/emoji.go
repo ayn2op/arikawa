@@ -7,14 +7,12 @@ import (
 
 // Emojis returns a list of emoji objects for the given guild.
 func (c *Client) Emojis(guildID discord.GuildID) ([]discord.Emoji, error) {
-	var e []discord.Emoji
-	return e, c.RequestJSON(&e, "GET", EndpointGuilds+guildID.String()+"/emojis")
+	return c.RequestJSON[[]discord.Emoji]("GET", EndpointGuilds+guildID.String()+"/emojis")
 }
 
 // Emoji returns an emoji object for the given guild and emoji IDs.
 func (c *Client) Emoji(guildID discord.GuildID, emojiID discord.EmojiID) (*discord.Emoji, error) {
-	var emj *discord.Emoji
-	return emj, c.RequestJSON(&emj, "GET",
+	return c.RequestJSON[*discord.Emoji]("GET",
 		EndpointGuilds+guildID.String()+"/emojis/"+emojiID.String())
 }
 
@@ -44,9 +42,8 @@ func (c *Client) CreateEmoji(
 		return nil, err
 	}
 
-	var emj *discord.Emoji
-	return emj, c.RequestJSON(
-		&emj, "POST",
+	return c.RequestJSON[*discord.Emoji](
+		"POST",
 		EndpointGuilds+guildID.String()+"/emojis",
 		httputil.WithJSONBody(data), httputil.WithHeaders(data.Header()),
 	)

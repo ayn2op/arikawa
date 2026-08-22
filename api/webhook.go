@@ -23,10 +23,8 @@ type CreateWebhookData struct {
 // Requires the MANAGE_WEBHOOKS permission.
 func (c *Client) CreateWebhook(
 	channelID discord.ChannelID, data CreateWebhookData) (*discord.Webhook, error) {
-
-	var w *discord.Webhook
-	return w, c.RequestJSON(
-		&w, "POST",
+	return c.RequestJSON[*discord.Webhook](
+		"POST",
 		EndpointChannels+channelID.String()+"/webhooks",
 		httputil.WithJSONBody(data),
 	)
@@ -36,22 +34,19 @@ func (c *Client) CreateWebhook(
 //
 // Requires the MANAGE_WEBHOOKS permission.
 func (c *Client) ChannelWebhooks(channelID discord.ChannelID) ([]discord.Webhook, error) {
-	var ws []discord.Webhook
-	return ws, c.RequestJSON(&ws, "GET", EndpointChannels+channelID.String()+"/webhooks")
+	return c.RequestJSON[[]discord.Webhook]("GET", EndpointChannels+channelID.String()+"/webhooks")
 }
 
 // GuildWebhooks returns the webhooks of the guild with the given ID.
 //
 // Requires the MANAGE_WEBHOOKS permission.
 func (c *Client) GuildWebhooks(guildID discord.GuildID) ([]discord.Webhook, error) {
-	var ws []discord.Webhook
-	return ws, c.RequestJSON(&ws, "GET", EndpointGuilds+guildID.String()+"/webhooks")
+	return c.RequestJSON[[]discord.Webhook]("GET", EndpointGuilds+guildID.String()+"/webhooks")
 }
 
 // Webhook returns the webhook with the given id.
 func (c *Client) Webhook(webhookID discord.WebhookID) (*discord.Webhook, error) {
-	var w *discord.Webhook
-	return w, c.RequestJSON(&w, "GET", EndpointWebhooks+webhookID.String())
+	return c.RequestJSON[*discord.Webhook]("GET", EndpointWebhooks+webhookID.String())
 }
 
 // https://discord.com/developers/docs/resources/webhook#modify-webhook-json-params
@@ -69,10 +64,8 @@ type ModifyWebhookData struct {
 // Requires the MANAGE_WEBHOOKS permission.
 func (c *Client) ModifyWebhook(
 	webhookID discord.WebhookID, data ModifyWebhookData) (*discord.Webhook, error) {
-
-	var w *discord.Webhook
-	return w, c.RequestJSON(
-		&w, "PATCH",
+	return c.RequestJSON[*discord.Webhook](
+		"PATCH",
 		EndpointWebhooks+webhookID.String(),
 		httputil.WithJSONBody(data),
 	)

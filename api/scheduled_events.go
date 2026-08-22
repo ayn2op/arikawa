@@ -74,7 +74,6 @@ type GuildScheduledEventUser struct {
 func (c *Client) ListScheduledEventUsers(
 	guildID discord.GuildID, eventID discord.EventID, limit *option.Nullable[int],
 	withMember bool, before, after discord.UserID) ([]GuildScheduledEventUser, error) {
-	var eventUsers []GuildScheduledEventUser
 	var params struct {
 		Limit      *option.Nullable[int] `schema:"limit,omitempty"`
 		WithMember bool                  `schema:"with_member,omitempty"`
@@ -86,8 +85,8 @@ func (c *Client) ListScheduledEventUsers(
 	params.Before = before
 	params.After = after
 
-	return eventUsers, c.RequestJSON(
-		&eventUsers, "GET", EndpointGuilds+guildID.String()+"/scheduled-events/"+eventID.String()+"/users",
+	return c.RequestJSON[[]GuildScheduledEventUser](
+		"GET", EndpointGuilds+guildID.String()+"/scheduled-events/"+eventID.String()+"/users",
 		httputil.WithSchema(c, params),
 	)
 
@@ -97,13 +96,12 @@ func (c *Client) ListScheduledEventUsers(
 //
 // https://discord.com/developers/docs/resources/guild-scheduled-event#get-guild-scheduled-event-users
 func (c *Client) ListScheduledEvents(guildID discord.GuildID, withUserCount bool) ([]discord.GuildScheduledEvent, error) {
-	var scheduledEvents []discord.GuildScheduledEvent
 	var params struct {
 		WithUserCount bool `schema:"with_user_count"`
 	}
 	params.WithUserCount = withUserCount
-	return scheduledEvents, c.RequestJSON(
-		&scheduledEvents, "GET", EndpointGuilds+guildID.String()+"/scheduled-events",
+	return c.RequestJSON[[]discord.GuildScheduledEvent](
+		"GET", EndpointGuilds+guildID.String()+"/scheduled-events",
 		httputil.WithSchema(c, params),
 	)
 }
@@ -113,9 +111,8 @@ func (c *Client) ListScheduledEvents(guildID discord.GuildID, withUserCount bool
 // https://discord.com/developers/docs/resources/guild-scheduled-event#create-guild-scheduled-event
 func (c *Client) CreateScheduledEvent(guildID discord.GuildID, reason AuditLogReason,
 	data CreateScheduledEventData) (*discord.GuildScheduledEvent, error) {
-	var scheduledEvent *discord.GuildScheduledEvent
-	return scheduledEvent, c.RequestJSON(
-		&scheduledEvent, "POST",
+	return c.RequestJSON[*discord.GuildScheduledEvent](
+		"POST",
 		EndpointGuilds+guildID.String()+"/scheduled-events",
 		httputil.WithJSONBody(data),
 		httputil.WithHeaders(reason.Header()),
@@ -127,9 +124,7 @@ func (c *Client) CreateScheduledEvent(guildID discord.GuildID, reason AuditLogRe
 // https://discord.com/developers/docs/resources/guild-scheduled-event#modify-guild-scheduled-event
 func (c *Client) EditScheduledEvent(guildID discord.GuildID, eventID discord.EventID, reason AuditLogReason,
 	data EditScheduledEventData) (*discord.GuildScheduledEvent, error) {
-	var modifiedEvent *discord.GuildScheduledEvent
-	return modifiedEvent, c.RequestJSON(
-		&modifiedEvent,
+	return c.RequestJSON[*discord.GuildScheduledEvent](
 		"PATCH", EndpointGuilds+guildID.String()+"/scheduled-events/"+eventID.String(),
 		httputil.WithHeaders(reason.Header()),
 		httputil.WithJSONBody(data),
@@ -153,9 +148,9 @@ func (c *Client) ScheduledEvent(guildID discord.GuildID, eventID discord.EventID
 		WithUserCount bool `schema:"with_user_count"`
 	}
 	params.WithUserCount = withUserCount
-	var event *discord.GuildScheduledEvent
-	return event, c.RequestJSON(
-		&event, "GET", EndpointGuilds+guildID.String()+"/scheduled-events/"+eventID.String(),
+
+	return c.RequestJSON[*discord.GuildScheduledEvent](
+		"GET", EndpointGuilds+guildID.String()+"/scheduled-events/"+eventID.String(),
 		httputil.WithSchema(c, params),
 	)
 

@@ -153,10 +153,8 @@ func (c *Client) RespondInteraction(
 // InteractionResponse returns the initial interaction response.
 func (c *Client) InteractionResponse(
 	appID discord.AppID, token string) (*discord.Message, error) {
-
-	var m *discord.Message
-	return m, c.RequestJSON(
-		&m, "GET",
+	return c.RequestJSON[*discord.Message](
+		"GET",
 		EndpointWebhooks+appID.String()+"/"+token+"/messages/@original")
 }
 

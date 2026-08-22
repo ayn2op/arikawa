@@ -45,8 +45,7 @@ func (c *Client) Login(login, password string) (*LoginResponse, error) {
 	param.Login = login
 	param.Password = password
 
-	var r *LoginResponse
-	return r, c.RequestJSON(&r, "POST", EndpointLogin, httputil.WithJSONBody(param))
+	return c.RequestJSON[*LoginResponse]("POST", EndpointLogin, httputil.WithJSONBody(param))
 }
 
 // SendMFASMS sends a multi-factor authentication code to the user's phone number for verification.
@@ -55,10 +54,10 @@ func (c *Client) SendMFASMS(ticket string) (string, error) {
 	body := struct {
 		Ticket string `json:"ticket"`
 	}{ticket}
-	var r struct {
+	r, err := c.RequestJSON[struct {
 		Phone string `json:"phone"`
-	}
-	return r.Phone, c.RequestJSON(&r, "POST", EndpointSMS+"/send", httputil.WithJSONBody(body))
+	}]("POST", EndpointSMS+"/send", httputil.WithJSONBody(body))
+	return r.Phone, err
 }
 
 // TOTP verifies a multi-factor login using the TOTP code or backup code and retrieves an authentication token using the specified authenticator type.
@@ -77,6 +76,6 @@ func (c *Client) mfa(endpoint, code, ticket, loginInstanceID string) (*LoginResp
 		Ticket          string `json:"ticket"`
 		LoginInstanceID string `json:"login_instance_id"`
 	}{Code: code, Ticket: ticket, LoginInstanceID: loginInstanceID}
-	var r *LoginResponse
-	return r, c.RequestJSON(&r, "POST", endpoint, httputil.WithJSONBody(body))
+
+	return c.RequestJSON[*LoginResponse]("POST", endpoint, httputil.WithJSONBody(body))
 }

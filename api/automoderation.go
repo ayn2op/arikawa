@@ -10,9 +10,8 @@ import (
 //
 // This endpoint requires the MANAGE_GUILD permission.
 func (c *Client) ListAutoModerationRules(guildID discord.GuildID) ([]discord.AutoModerationRule, error) {
-	var rules []discord.AutoModerationRule
-	return rules, c.RequestJSON(
-		&rules, "GET",
+	return c.RequestJSON[[]discord.AutoModerationRule](
+		"GET",
 		EndpointGuilds+guildID.String()+"/auto-moderation/rules",
 	)
 }
@@ -21,9 +20,8 @@ func (c *Client) ListAutoModerationRules(guildID discord.GuildID) ([]discord.Aut
 //
 // This endpoint requires the MANAGE_GUILD permission.
 func (c *Client) GetAutoModerationRule(guildID discord.GuildID, ruleID discord.AutoModerationRuleID) (discord.AutoModerationRule, error) {
-	var rule discord.AutoModerationRule
-	return rule, c.RequestJSON(
-		&rule, "GET",
+	return c.RequestJSON[discord.AutoModerationRule](
+		"GET",
 		EndpointGuilds+guildID.String()+"/auto-moderation/rules/"+ruleID.String(),
 	)
 }
@@ -34,8 +32,7 @@ func (c *Client) GetAutoModerationRule(guildID discord.GuildID, ruleID discord.A
 //
 // This endpoint supports the X-Audit-Log-Reason header.
 func (c *Client) CreateAutoModerationRule(guildID discord.GuildID, rule discord.AutoModerationRule) (*discord.AutoModerationRule, error) {
-	var ret *discord.AutoModerationRule
-	return ret, c.RequestJSON(&ret, "POST", EndpointGuilds+guildID.String()+"/auto-moderation/rules",
+	return c.RequestJSON[*discord.AutoModerationRule]("POST", EndpointGuilds+guildID.String()+"/auto-moderation/rules",
 		httputil.WithJSONBody(rule),
 	)
 }
@@ -66,8 +63,7 @@ type ModifyAutoModerationRuleData struct {
 //
 // This endpoint supports the X-Audit-Log-Reason header.
 func (c *Client) ModifyAutoModerationRule(guildID discord.GuildID, ruleID discord.AutoModerationRuleID, data ModifyAutoModerationRuleData) (*discord.AutoModerationRule, error) {
-	var ret *discord.AutoModerationRule
-	return ret, c.RequestJSON(&ret, "PATCH", EndpointGuilds+guildID.String()+"/auto-moderation/rules/"+ruleID.String(),
+	return c.RequestJSON[*discord.AutoModerationRule]("PATCH", EndpointGuilds+guildID.String()+"/auto-moderation/rules/"+ruleID.String(),
 		httputil.WithJSONBody(data),
 		httputil.WithHeaders(data.Header()),
 	)

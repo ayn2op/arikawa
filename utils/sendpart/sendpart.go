@@ -68,7 +68,7 @@ type DataMultipartWriter interface {
 func Do(c *httputil.Client, method string, data DataMultipartWriter, v any, url string) error {
 	if !data.NeedsMultipart() {
 		// No files, so no need for streaming.
-		return c.RequestJSON(v, method, url, httputil.WithJSONBody(data))
+		return c.RequestJSONInto(v, method, url, httputil.WithJSONBody(data))
 	}
 
 	resp, err := c.MeanwhileMultipart(data, method, url)

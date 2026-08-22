@@ -27,13 +27,11 @@ type SessionStartLimit struct {
 // BotURL fetches the Gateway URL along with extra metadata. The token
 // passed in will NOT be prefixed with Bot.
 func (c *Client) BotURL() (*BotData, error) {
-	var g *BotData
-	return g, c.RequestJSON(&g, "GET", EndpointGatewayBot)
+	return c.RequestJSON[*BotData]("GET", EndpointGatewayBot)
 }
 
 // GatewayURL asks Discord for a Websocket URL to the Gateway.
 func GatewayURL(ctx context.Context) (string, error) {
-	var g BotData
-	err := httputil.NewClient().WithContext(ctx).RequestJSON(&g, "GET", EndpointGateway)
+	g, err := httputil.NewClient().WithContext(ctx).RequestJSON[BotData]("GET", EndpointGateway)
 	return g.URL, err
 }

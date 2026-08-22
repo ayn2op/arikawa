@@ -141,8 +141,15 @@ func (c *Client) FastRequest(method, url string, opts ...RequestOption) error {
 	return r.GetBody().Close()
 }
 
-// RequestJSON performs a request and unmarshals the JSON body into "to".
-func (c *Client) RequestJSON(to any, method, url string, opts ...RequestOption) error {
+// RequestJSON performs a request and unmarshals its JSON body.
+func (c *Client) RequestJSON[T any](method, url string, opts ...RequestOption) (T, error) {
+	var out T
+	err := c.RequestJSONInto(&out, method, url, opts...)
+	return out, err
+}
+
+// RequestJSONInto performs a request and unmarshals its JSON body into to.
+func (c *Client) RequestJSONInto(to any, method, url string, opts ...RequestOption) error {
 	r, err := c.Request(method, url, opts...)
 	if err != nil {
 		return err

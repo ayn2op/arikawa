@@ -23,22 +23,18 @@ func TestAdminOnly(t *testing.T) {
 
 	t.Run("allow message", func(t *testing.T) {
 		var msg = &gateway.MessageCreateEvent{
-			Message: discord.Message{
-				ID:        1,
-				ChannelID: 69420,
-				Author:    discord.User{ID: 69420},
-			},
+			ID:        1,
+			ChannelID: 69420,
+			Author:    discord.User{ID: 69420},
 		}
 		expectNil(t, middleware(msg))
 	})
 
 	t.Run("deny message", func(t *testing.T) {
 		var msg = &gateway.MessageCreateEvent{
-			Message: discord.Message{
-				ID:        2,
-				ChannelID: 1337,
-				Author:    discord.User{ID: 1337},
-			},
+			ID:        2,
+			ChannelID: 1337,
+			Author:    discord.User{ID: 1337},
 		}
 		expectBreak(t, middleware(msg))
 		var pin = &gateway.ChannelPinsUpdateEvent{
@@ -61,30 +57,24 @@ func TestGuildOnly(t *testing.T) {
 
 	t.Run("allow message with GuildID", func(t *testing.T) {
 		var msg = &gateway.MessageCreateEvent{
-			Message: discord.Message{
-				ID:      3,
-				GuildID: 1337,
-			},
+			ID:      3,
+			GuildID: 1337,
 		}
 		expectNil(t, middleware(msg))
 	})
 
 	t.Run("allow message with ChannelID", func(t *testing.T) {
 		var msg = &gateway.MessageCreateEvent{
-			Message: discord.Message{
-				ID:        3,
-				ChannelID: 69420,
-			},
+			ID:        3,
+			ChannelID: 69420,
 		}
 		expectNil(t, middleware(msg))
 	})
 
 	t.Run("deny message", func(t *testing.T) {
 		var msg = &gateway.MessageCreateEvent{
-			Message: discord.Message{
-				ID:        1,
-				ChannelID: 12,
-			},
+			ID:        1,
+			ChannelID: 12,
 		}
 		expectBreak(t, middleware(msg))
 
@@ -121,10 +111,8 @@ func BenchmarkGuildOnly(b *testing.B) {
 	}
 	var middleware = GuildOnly(ctx)
 	var msg = &gateway.MessageCreateEvent{
-		Message: discord.Message{
-			ID:      3,
-			GuildID: 1337,
-		},
+		ID:      3,
+		GuildID: 1337,
 	}
 
 	b.ResetTimer()
@@ -146,11 +134,9 @@ func BenchmarkAdminOnly(b *testing.B) {
 	}
 	var middleware = AdminOnly(ctx)
 	var msg = &gateway.MessageCreateEvent{
-		Message: discord.Message{
-			ID:        1,
-			ChannelID: 1337,
-			Author:    discord.User{ID: 69420},
-		},
+		ID:        1,
+		ChannelID: 1337,
+		Author:    discord.User{ID: 69420},
 	}
 
 	b.ResetTimer()

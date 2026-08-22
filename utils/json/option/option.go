@@ -15,8 +15,10 @@ func Some[T any](v T) Option[T] {
 }
 
 // PtrTo returns a pointer to v.
+//
+//go:fix inline
 func PtrTo[T any](v T) *T {
-	return &v
+	return new(v)
 }
 
 // Nullable distinguishes omitted, null, and non-null values.

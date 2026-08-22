@@ -11,7 +11,7 @@ import (
 
 func TestAuthTokenRefresh(t *testing.T) {
 	s := New("old")
-	s.Handler.Call(&gateway.ReadyEvent{ReadyEventExtras: gateway.ReadyEventExtras{AuthToken: "new"}})
+	s.Handler.Call(&gateway.ReadyEvent{AuthToken: "new"})
 	if s.Client.Session.Token != "new" {
 		t.Fatalf("unexpected token: %q", s.Client.Session.Token)
 	}

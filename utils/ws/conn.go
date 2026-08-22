@@ -240,8 +240,7 @@ func readLoop(ctx context.Context, conn *websocket.Conn, codec Codec, opCh chan<
 				Code: -1,
 			}
 
-			var closeErr *websocket.CloseError
-			if errors.As(err, &closeErr) {
+			if closeErr, ok := errors.AsType[*websocket.CloseError](err); ok {
 				closeEv.Code = closeErr.Code
 				closeEv.Err = fmt.Errorf("%d %s", closeErr.Code, closeErr.Text)
 			}

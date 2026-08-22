@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ayn2op/arikawa/v3/discord"
 	"github.com/ayn2op/arikawa/v3/gateway"
 	"github.com/ayn2op/arikawa/v3/state"
 	"github.com/ayn2op/arikawa/v3/state/store"
@@ -240,9 +239,7 @@ func TestContext(t *testing.T) {
 	testMessage := func(content string) error {
 		// Mock a messageCreate event
 		m := &gateway.MessageCreateEvent{
-			Message: discord.Message{
-				Content: content,
-			},
+			Content: content,
 		}
 
 		return ctx.callCmd(m)
@@ -338,9 +335,7 @@ func TestContext(t *testing.T) {
 		given.Return = make(chan any)
 
 		ctx.Handler.Call(&gateway.MessageCreateEvent{
-			Message: discord.Message{
-				Content: "!content hime arikawa best trap",
-			},
+			Content: "!content hime arikawa best trap",
 		})
 
 		if c := (<-given.Return).(RawArguments); c != "hime arikawa best trap" {
@@ -367,9 +362,7 @@ func sendMsg(ctx *Context, given *testc, into any, content string) (call error) 
 
 	// Mock a messageCreate event
 	m := &gateway.MessageCreateEvent{
-		Message: discord.Message{
-			Content: content,
-		},
+		Content: content,
 	}
 
 	var callCh = make(chan error)
@@ -417,9 +410,7 @@ func BenchmarkCall(b *testing.B) {
 	}
 
 	m := &gateway.MessageCreateEvent{
-		Message: discord.Message{
-			Content: "~noop",
-		},
+		Content: "~noop",
 	}
 
 	b.ResetTimer()

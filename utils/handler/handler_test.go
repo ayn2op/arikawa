@@ -7,13 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ayn2op/arikawa/v3/discord"
 	"github.com/ayn2op/arikawa/v3/gateway"
 )
 
 func newMessage(content string) *gateway.MessageCreateEvent {
 	return &gateway.MessageCreateEvent{
-		Message: discord.Message{Content: content},
+		Content: content,
 	}
 }
 

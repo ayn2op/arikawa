@@ -118,13 +118,13 @@ func (c *Command) MarshalJSON() ([]byte, error) {
 		*RawCommand
 		DMPermission      bool `json:"dm_permission"`
 		DefaultPermission bool `json:"default_permission"`
-	}{RawCommand: (*RawCommand)(c)}
+	}{RawCommand: (*RawCommand)(c),
 
-	// Discord defaults default_permission to true, so we need to invert the
-	// meaning of the field (>No<DefaultPermission) to match Go's default
-	// value, false.
-	cmd.DefaultPermission = !c.NoDefaultPermission
-	cmd.DMPermission = !c.NoDMPermission
+		// Discord defaults default_permission to true, so we need to invert the
+		// meaning of the field (>No<DefaultPermission) to match Go's default
+		// value, false.
+		DefaultPermission: !c.NoDefaultPermission,
+		DMPermission:      !c.NoDMPermission}
 
 	return json.Marshal(cmd)
 }

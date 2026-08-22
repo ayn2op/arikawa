@@ -3,7 +3,6 @@ package bot
 import (
 	"testing"
 
-	"github.com/ayn2op/arikawa/v3/discord"
 	"github.com/ayn2op/arikawa/v3/gateway"
 	"github.com/ayn2op/arikawa/v3/state"
 	"github.com/ayn2op/arikawa/v3/state/store"
@@ -57,7 +56,7 @@ func TestSubcommandPlumb(t *testing.T) {
 
 	sendFn := func(content string) {
 		m := &gateway.MessageCreateEvent{
-			Message: discord.Message{Content: content},
+			Content: content,
 		}
 
 		if err := c.callCmd(m); err != nil {
@@ -140,9 +139,7 @@ func TestSubcommandOnlyPlumb(t *testing.T) {
 
 	// Try call exactly what's in the Plumb example:
 	m := &gateway.MessageCreateEvent{
-		Message: discord.Message{
-			Content: "onlyPlumb test command",
-		},
+		Content: "onlyPlumb test command",
 	}
 
 	if err := c.callCmd(m); err != nil {

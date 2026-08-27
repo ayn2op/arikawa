@@ -1,8 +1,9 @@
 package option
 
 import (
-	"encoding/json"
 	"testing"
+
+	"github.com/ayn2op/arikawa/v3/utils/json"
 )
 
 func TestNullable(t *testing.T) {

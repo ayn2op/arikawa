@@ -2,12 +2,12 @@ package gateway
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/ayn2op/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/utils/json"
 	"github.com/ayn2op/arikawa/v3/utils/json/option"
 	"github.com/ayn2op/arikawa/v3/utils/ws"
 )

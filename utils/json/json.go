@@ -3,9 +3,13 @@
 package json
 
 import (
-	"encoding/json"
+	jsonv1 "encoding/json"
+	"encoding/json/jsontext"
+	jsonv2 "encoding/json/v2"
 	"io"
 )
+
+var v1Options = jsonv1.DefaultOptionsV1()
 
 type Driver interface {
 	Marshal(v any) ([]byte, error)
@@ -18,22 +22,22 @@ type Driver interface {
 type DefaultDriver struct{}
 
 func (d DefaultDriver) Marshal(v any) ([]byte, error) {
-	return json.Marshal(v)
+	return jsonv2.Marshal(v, v1Options)
 }
 
 func (d DefaultDriver) Unmarshal(data []byte, v any) error {
-	return json.Unmarshal(data, v)
+	return jsonv2.Unmarshal(data, v, v1Options)
 }
 
 func (d DefaultDriver) DecodeStream(r io.Reader, v any) error {
-	return json.NewDecoder(r).Decode(v)
+	return jsonv2.UnmarshalDecode(jsontext.NewDecoder(r), v, v1Options)
 }
 
 func (d DefaultDriver) EncodeStream(w io.Writer, v any) error {
-	return json.NewEncoder(w).Encode(v)
+	return jsonv2.MarshalEncode(jsontext.NewEncoder(w), v, v1Options)
 }
 
-// Default is the default JSON driver, which uses encoding/json.
+// Default is the default JSON driver, which uses encoding/json/v2.
 var Default Driver = DefaultDriver{}
 
 // Marshal uses the default driver.

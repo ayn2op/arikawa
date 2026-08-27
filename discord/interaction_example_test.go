@@ -1,7 +1,9 @@
 package discord_test
 
 import (
-	"encoding/json"
+	jsonv1 "encoding/json"
+	"encoding/json/jsontext"
+	jsonv2 "encoding/json/v2"
 	"fmt"
 	"log"
 
@@ -46,7 +48,7 @@ func ExampleCommandInteractionOptions_Unmarshal() {
 		log.Fatalln(err)
 	}
 
-	b, _ := json.MarshalIndent(quickCommand, "", "  ")
+	b, _ := jsonv2.Marshal(quickCommand, jsonv1.DefaultOptionsV1(), jsontext.WithIndent("  "))
 	fmt.Println(string(b))
 
 	// Output:
@@ -81,7 +83,7 @@ func opt(t discord.CommandOptionType, name string, v any) discord.CommandInterac
 }
 
 func mustJSON(v any) internaljson.Raw {
-	b, err := json.Marshal(v)
+	b, err := internaljson.Marshal(v)
 	if err != nil {
 		panic(err)
 	}

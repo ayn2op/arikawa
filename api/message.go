@@ -150,6 +150,13 @@ func (c *Client) MessagesAfter(
 	return msgs, nil
 }
 
+type messagesRangeParams struct {
+	Before discord.MessageID `schema:"before,omitempty"`
+	After  discord.MessageID `schema:"after,omitempty"`
+	Around discord.MessageID `schema:"around,omitempty"`
+	Limit  uint              `schema:"limit"`
+}
+
 func (c *Client) messagesRange(
 	channelID discord.ChannelID,
 	before, after, around discord.MessageID, limit uint) ([]discord.Message, error) {
@@ -161,18 +168,12 @@ func (c *Client) messagesRange(
 		limit = 100
 	}
 
-	var param struct {
-		Before discord.MessageID `schema:"before,omitempty"`
-		After  discord.MessageID `schema:"after,omitempty"`
-		Around discord.MessageID `schema:"around,omitempty"`
-
-		Limit uint `schema:"limit"`
+	param := messagesRangeParams{
+		Before: before,
+		After:  after,
+		Around: around,
+		Limit:  limit,
 	}
-
-	param.Before = before
-	param.After = after
-	param.Around = around
-	param.Limit = limit
 
 	return c.RequestJSON[[]discord.Message](
 		"GET",

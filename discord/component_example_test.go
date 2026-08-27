@@ -1,7 +1,9 @@
 package discord_test
 
 import (
-	"encoding/json"
+	jsonv1 "encoding/json"
+	"encoding/json/jsontext"
+	jsonv2 "encoding/json/v2"
 	"fmt"
 	"log"
 
@@ -63,7 +65,7 @@ func ExampleTopLevelComponents_Unmarshal() {
 		log.Fatalln(err)
 	}
 
-	b, _ := json.MarshalIndent(data, "", "  ")
+	b, _ := jsonv2.Marshal(data, jsonv1.DefaultOptionsV1(), jsontext.WithIndent("  "))
 	fmt.Println(string(b))
 
 	// Output:

@@ -3,7 +3,8 @@ package option
 
 import (
 	"bytes"
-	"encoding/json"
+
+	"github.com/ayn2op/arikawa/v3/utils/json"
 )
 
 // Option wraps a type to make it omittable.

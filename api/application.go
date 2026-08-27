@@ -1,10 +1,9 @@
 package api
 
 import (
-	"encoding/json"
-
 	"github.com/ayn2op/arikawa/v3/discord"
 	"github.com/ayn2op/arikawa/v3/utils/httputil"
+	"github.com/ayn2op/arikawa/v3/utils/json"
 )
 
 var EndpointApplications = Endpoint + "applications/"

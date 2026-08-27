@@ -3,12 +3,13 @@ package httpdriver
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"reflect"
+
+	"github.com/ayn2op/arikawa/v3/utils/json"
 )
 
 var (

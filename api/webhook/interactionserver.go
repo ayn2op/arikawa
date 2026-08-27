@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/ayn2op/arikawa/v3/api"
 	"github.com/ayn2op/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/utils/json"
 )
 
 func writeError(w http.ResponseWriter, code int, err error) {
@@ -125,14 +125,14 @@ func (s *InteractionServer) handle(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		var ev discord.InteractionEvent
 
-		if err := json.NewDecoder(r.Body).Decode(&ev); err != nil {
+		if err := json.DecodeStream(r.Body, &ev); err != nil {
 			s.ErrorFunc(w, r, 400, fmt.Errorf("cannot decode interaction : %w", err))
 			return
 		}
 
 		if _, ok := ev.Data.(*discord.PingInteraction); ok {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(api.InteractionResponse{
+			json.EncodeStream(w, api.InteractionResponse{
 				Type: api.PongInteraction,
 			})
 		}
@@ -145,7 +145,7 @@ func (s *InteractionServer) handle(w http.ResponseWriter, r *http.Request) {
 				resp.WriteMultipart(body)
 			} else {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resp)
+				json.EncodeStream(w, resp)
 			}
 		}
 	default:

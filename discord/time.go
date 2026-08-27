@@ -1,10 +1,11 @@
 package discord
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ayn2op/arikawa/v3/utils/json"
 )
 
 // Timestamp has a valid zero-value, which can be checked using the IsValid()

@@ -1,11 +1,11 @@
 package api
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/ayn2op/arikawa/v3/discord"
+	"github.com/ayn2op/arikawa/v3/utils/json"
 	"github.com/ayn2op/arikawa/v3/utils/sendpart"
 )
 

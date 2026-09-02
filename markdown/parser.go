@@ -10,8 +10,7 @@ import (
 // Heading is a Discord-specific heading.
 type Heading = ast.Heading
 
-// BlockParsers returns a list of block parsers.
-func BlockParsers() []util.PrioritizedValue {
+func blockParsers() []util.PrioritizedValue {
 	return []util.PrioritizedValue{
 		util.Prioritized(defaultFencedCodeBlockParser, 10),
 		util.Prioritized(parser.NewATXHeadingParser(), 100),
@@ -22,11 +21,6 @@ func BlockParsers() []util.PrioritizedValue {
 	}
 }
 
-// InlineParsers returns a list of inline parsers.
-func InlineParsers() []util.PrioritizedValue {
-	return inlineParsers(&emoji{})
-}
-
 func inlineParsers(emojiParser *emoji) []util.PrioritizedValue {
 	return []util.PrioritizedValue{
 		util.Prioritized(emojiParser, 200),
@@ -35,13 +29,8 @@ func inlineParsers(emojiParser *emoji) []util.PrioritizedValue {
 		util.Prioritized(inline{}, 350),
 		util.Prioritized(mention{}, 400),
 		util.Prioritized(autolink{}, 500),
+		util.Prioritized(parser.NewLinkParser(), 600),
 	}
-}
-
-// InlineParserWithLink returns a list of inline parsers, including the link
-// parser.
-func InlineParserWithLink() []util.PrioritizedValue {
-	return append(InlineParsers(), util.Prioritized(parser.NewLinkParser(), 600))
 }
 
 // matchInline function to parse a pair of bytes (chars)

@@ -4,9 +4,6 @@ import (
 	"testing"
 
 	_ "embed"
-
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
 )
 
 const _fencedInline = "hi ```thing```"
@@ -59,12 +56,6 @@ const _fencedMixedHTML = `<p>hii <pre><code class="language-go">package main
 </p>`
 
 func TestFenced(t *testing.T) {
-	// Make a fenced only parser:
-	p := parser.NewParser(
-		parser.WithInlineParsers(InlineParsers()...),
-		parser.WithBlockParsers(BlockParsers()...),
-	)
-
 	var tests = []struct {
 		md, html, name string
 	}{
@@ -76,7 +67,7 @@ func TestFenced(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			node := p.Parse(text.NewReader([]byte(test.md)))
+			node := Parse([]byte(test.md))
 			dump := dump(node, []byte(test.md))
 			t.Log("node:\n", dump)
 		})

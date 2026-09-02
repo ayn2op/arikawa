@@ -34,6 +34,29 @@ func TestParses(t *testing.T) {
 	}
 }
 
+func TestParseLink(t *testing.T) {
+	content := []byte("[example](https://example.com)")
+	message := &discord.Message{}
+	cabinet := store.Cabinet{}
+	for name, root := range map[string]ast.Node{
+		"plain":   Parse(content),
+		"message": ParseWithMessage(content, cabinet, message),
+	} {
+		t.Run(name, func(t *testing.T) {
+			var destination string
+			_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+				if link, ok := node.(*ast.Link); ok && entering {
+					destination = string(link.Destination)
+				}
+				return ast.WalkContinue, nil
+			})
+			if destination != "https://example.com" {
+				t.Fatalf("link destination = %q, want %q", destination, "https://example.com")
+			}
+		})
+	}
+}
+
 func TestParseConcurrent(t *testing.T) {
 	for range 8 {
 		t.Run("worker", func(t *testing.T) {
@@ -70,11 +93,11 @@ func BenchmarkParse(b *testing.B) {
 			parseSink = Parse(content)
 		}
 	})
-	b.Run("message_with_links", func(b *testing.B) {
+	b.Run("message", func(b *testing.B) {
 		message := &discord.Message{}
 		cabinet := store.Cabinet{}
 		for b.Loop() {
-			parseSink = ParseWithMessage(content, cabinet, message, false)
+			parseSink = ParseWithMessage(content, cabinet, message)
 		}
 	})
 }

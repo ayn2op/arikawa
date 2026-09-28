@@ -34,7 +34,7 @@ const (
 	helloOp               ws.OpCode = 10
 	heartbeatAckOp        ws.OpCode = 11
 	callConnectOp         ws.OpCode = 13
-	guildSubscriptionsOp  ws.OpCode = 14
+	guildSubscriptionsOp  ws.OpCode = 37
 )
 
 // OpUnmarshalers contains the Op unmarshalers for this gateway.
@@ -140,14 +140,20 @@ type UpdatePresenceCommand struct {
 	AFK    bool           `json:"afk"`
 }
 
-// GuildSubscribeCommand is a command for Op 14. It is undocumented.
-type GuildSubscribeCommand struct {
-	Typing     bool            `json:"typing"`
-	Threads    bool            `json:"threads"`
-	Activities bool            `json:"activities"`
-	GuildID    discord.GuildID `json:"guild_id"`
+// GuildSubscriptionsBulkCommand is a command for Op 37. It replaces the
+// deprecated Op 14 and is undocumented.
+type GuildSubscriptionsBulkCommand struct {
+	Subscriptions map[discord.GuildID]GuildSubscription `json:"subscriptions"`
+}
 
-	// Channels is not documented. It's used to fetch the right members sidebar.
+// GuildSubscription is the subscription of a guild in
+// GuildSubscriptionsBulkCommand.
+type GuildSubscription struct {
+	Typing     bool `json:"typing"`
+	Threads    bool `json:"threads"`
+	Activities bool `json:"activities"`
+
+	// Channels maps channels to the ranges of their member lists to receive.
 	Channels map[discord.ChannelID][][2]int `json:"channels,omitempty"`
 }
 
@@ -420,7 +426,7 @@ type GuildMemberListOp struct {
 	Item  GuildMemberListOpItem `json:"item,omitzero"`
 
 	// SYNC ONLY
-	// Range requested in GuildSubscribeCommand.
+	// Range requested in GuildSubscriptionsBulkCommand.
 	Range [2]int `json:"range,omitempty"`
 	// Items is basically a linear list of roles and members, similarly to
 	// how the client renders it. No, it's not nested.

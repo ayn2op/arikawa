@@ -15,7 +15,7 @@ func init() {
 		func() ws.Event { return new(RequestGuildMembersCommand) },
 		func() ws.Event { return new(UpdateVoiceStateCommand) },
 		func() ws.Event { return new(UpdatePresenceCommand) },
-		func() ws.Event { return new(GuildSubscribeCommand) },
+		func() ws.Event { return new(GuildSubscriptionsBulkCommand) },
 		func() ws.Event { return new(ResumedEvent) },
 		func() ws.Event { return new(ChannelCreateEvent) },
 		func() ws.Event { return new(ChannelUpdateEvent) },
@@ -136,11 +136,11 @@ func (*UpdatePresenceCommand) Op() ws.OpCode { return 3 }
 // EventType implements Event.
 func (*UpdatePresenceCommand) EventType() ws.EventType { return "" }
 
-// Op implements Event. It always returns Op 14.
-func (*GuildSubscribeCommand) Op() ws.OpCode { return 14 }
+// Op implements Event. It always returns Op 37.
+func (*GuildSubscriptionsBulkCommand) Op() ws.OpCode { return 37 }
 
 // EventType implements Event.
-func (*GuildSubscribeCommand) EventType() ws.EventType { return "" }
+func (*GuildSubscriptionsBulkCommand) EventType() ws.EventType { return "" }
 
 // Op implements Event. It always returns 0.
 func (*ResumedEvent) Op() ws.OpCode { return dispatchOp }

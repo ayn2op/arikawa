@@ -25,7 +25,7 @@ func TestSharding(t *testing.T) {
 			t.Log(now, "initializing shard")
 
 			s.AddIntents(gateway.IntentGuilds)
-			s.AddHandler(readyCh)
+			s.AddChanHandler(readyCh)
 			s.AddHandler(func(err error) {
 				t.Log(err)
 			})

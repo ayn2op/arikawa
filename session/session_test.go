@@ -34,7 +34,7 @@ func TestSession(t *testing.T) {
 	readyCh := make(chan *gateway.ReadyEvent, 1)
 
 	s := NewWithIntents(env.BotToken, gateway.IntentGuilds)
-	s.AddHandler(readyCh)
+	s.AddChanHandler(readyCh)
 
 	for i := 0; i < attempts; i++ {
 		if err := s.Open(ctx); err != nil {
@@ -74,7 +74,7 @@ func TestSessionConnect(t *testing.T) {
 	readyCh := make(chan *gateway.ReadyEvent, 1)
 
 	s := NewWithIntents(env.BotToken, gateway.IntentGuilds)
-	s.AddHandler(readyCh)
+	s.AddChanHandler(readyCh)
 
 	for i := 0; i < attempts; i++ {
 		ctx, cancel := context.WithCancel(ctx)

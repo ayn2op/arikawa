@@ -299,7 +299,7 @@ func (s *Session) Open(ctx context.Context) error {
 	s.state.ctx, s.state.cancel = context.WithCancel(context.Background())
 
 	// TODO: change this to AddSyncHandler.
-	rm := s.AddHandler(evCh)
+	rm := s.AddChanHandler(evCh)
 	defer rm()
 
 	opCh := s.state.gateway.Connect(s.state.ctx)

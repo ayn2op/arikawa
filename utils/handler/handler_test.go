@@ -2,17 +2,17 @@ package handler
 
 import (
 	"context"
-	"reflect"
-	"strings"
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/ayn2op/arikawa/v3/discord"
 	"github.com/ayn2op/arikawa/v3/gateway"
 )
 
 func newMessage(content string) *gateway.MessageCreateEvent {
 	return &gateway.MessageCreateEvent{
-		Content: content,
+		Message: discord.Message{Content: content},
 	}
 }
 
@@ -43,154 +43,98 @@ func TestCall(t *testing.T) {
 	case <-time.After(5 * time.Millisecond):
 		break
 	}
-
-	// Invalid type test
-	_, err := h.AddHandlerCheck("this should panic")
-	if err == nil {
-		t.Fatal("No errors found")
-	}
-
-	// We don't do anything with the returned callback, as there's none.
-
-	if !strings.Contains(err.Error(), "given interface is not a function") {
-		t.Fatal("Unexpected error:", err)
-	}
 }
 
-func TestHandler(t *testing.T) {
-	var results = make(chan string)
-
-	h, err := newHandler(func(m *gateway.MessageCreateEvent) {
-		results <- m.Content
-	}, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	const result = "Hime Arikawa"
-	var msg = newMessage(result)
-
-	var msgV = reflect.ValueOf(msg)
-	var msgT = msgV.Type()
-
-	if h.not(msgT) {
-		t.Fatal("Event type mismatch")
-	}
-
-	go h.call(msgV)
-
-	if results := <-results; results != result {
-		t.Fatal("Unexpected results:", results)
-	}
-}
-
-func TestHandlerChan(t *testing.T) {
-	var results = make(chan *gateway.MessageCreateEvent)
-
-	h, err := newHandler(results, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	const result = "Hime Arikawa"
-	var msg = newMessage(result)
-
-	var msgV = reflect.ValueOf(msg)
-	var msgT = msgV.Type()
-
-	if h.not(msgT) {
-		t.Fatal("Event type mismatch")
-	}
-
-	go h.call(msgV)
-
-	if results := <-results; results.Content != result {
-		t.Fatal("Unexpected results:", results)
-	}
-}
-
-func TestHandlerChanCancel(t *testing.T) {
-	// Never receive from this channel. It is important that this channel is
-	// unbuffered.
-	var results = make(chan *gateway.MessageCreateEvent)
-
-	h, err := newHandler(results, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	const result = "Hime Arikawa"
-	var msg = newMessage(result)
-
-	var msgV = reflect.ValueOf(msg)
-	var msgT = msgV.Type()
-
-	if h.not(msgT) {
-		t.Fatal("Event type mismatch")
-	}
-
-	// Channel that waits for call() to die.
-	die := make(chan struct{})
-
-	// Call in a goroutine, which would trigger a close.
-	go func() { h.call(msgV); die <- struct{}{} }()
-
-	// Call the cleanup function, which should stop the send.
-	h.cleanup()
-
-	// Check if we still have things being sent.
-	select {
-	case <-die:
-		// pass
-	case <-time.After(200 * time.Millisecond):
-		t.Fatal("Timed out waiting for call routine to die.")
-	}
-
-	// Check if we still receive something.
-	select {
-	case <-results:
-		t.Fatal("Unexpected results received.")
-	default:
-		// pass
-	}
-}
-
-func TestHandlerInterface(t *testing.T) {
-	var results = make(chan any)
-
-	h, err := newHandler(func(m any) {
-		results <- m
-	}, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	const result = "Hime Arikawa"
-	var msg = newMessage(result)
-
-	var msgV = reflect.ValueOf(msg)
-	var msgT = msgV.Type()
-
-	if h.not(msgT) {
-		t.Fatal("Event type mismatch")
-	}
-
-	go h.call(msgV)
-	recv := <-results
-
-	if msg, ok := recv.(*gateway.MessageCreateEvent); ok {
-		if msg.Content == result {
-			return
+func TestInvalidEventType(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic for non-pointer event type")
 		}
+	}()
 
-		t.Fatal("Content mismatch:", msg.Content)
+	New().AddHandler(func(gateway.MessageCreateEvent) {})
+}
+
+func TestSyncOrder(t *testing.T) {
+	h := New()
+
+	var got []string
+	h.AddSyncHandler(func(any) { got = append(got, "any") })
+	h.AddSyncHandler(func(*gateway.MessageCreateEvent) { got = append(got, "typed") })
+	h.AddSyncHandler(func(gateway.Event) { got = append(got, "event") })
+	h.AddSyncHandler(func(*gateway.TypingStartEvent) { got = append(got, "typing") })
+
+	h.Call(newMessage(""))
+
+	want := []string{"typed", "any", "event"}
+	if len(got) != len(want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	}
+}
+
+func TestInterfaceMismatch(t *testing.T) {
+	h := New()
+
+	h.AddSyncHandler(func(error) { t.Fatal("called for event not implementing error") })
+	h.Call(newMessage(""))
+}
+
+func TestReentrant(t *testing.T) {
+	h := New()
+
+	var calls int
+	var rm func()
+	rm = h.AddSyncHandler(func(*gateway.MessageCreateEvent) {
+		calls++
+		rm()
+		// Adding and calling from within a handler must not deadlock either.
+		h.AddSyncHandler(func(*gateway.TypingStartEvent) {})
+		h.Call(&gateway.TypingStartEvent{})
+	})
+
+	done := make(chan struct{})
+	go func() {
+		h.Call(newMessage(""))
+		h.Call(newMessage(""))
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("deadlock")
 	}
 
-	t.Fatal("Assertion failed:", recv)
+	if calls != 1 {
+		t.Fatal("handler called after removal:", calls)
+	}
+}
+
+func TestChanHandler(t *testing.T) {
+	h := New()
+
+	ch := make(chan *gateway.MessageCreateEvent)
+	rm := h.AddChanHandler(ch)
+
+	h.Call(newMessage("hime arikawa"))
+
+	if m := <-ch; m.Content != "hime arikawa" {
+		t.Fatal("Returned results is wrong:", m.Content)
+	}
+
+	// Removing must unblock pending sends.
+	h.Call(newMessage("astolfo"))
+	rm()
+	rm()
 }
 
 func TestHandlerWaitFor(t *testing.T) {
-	inc := make(chan any, 1)
+	inc := make(chan *gateway.TypingStartEvent, 1)
 
 	h := New()
 
@@ -206,14 +150,13 @@ func TestHandlerWaitFor(t *testing.T) {
 	}
 
 	go func() {
-		inc <- h.WaitFor(context.Background(), func(v any) bool {
-			tp, ok := v.(*gateway.TypingStartEvent)
-			if !ok {
-				return false
-			}
-
+		ev, err := h.WaitFor(context.Background(), func(tp *gateway.TypingStartEvent) bool {
 			return tp.ChannelID == wanted.ChannelID
 		})
+		if err != nil {
+			t.Error(err)
+		}
+		inc <- ev
 	}()
 
 	// Wait for WaitFor to add its handler:
@@ -223,8 +166,7 @@ func TestHandlerWaitFor(t *testing.T) {
 		h.Call(ev)
 	}
 
-	recv := <-inc
-	if recv != wanted {
+	if recv := <-inc; recv != wanted {
 		t.Fatal("Unexpected receive:", recv)
 	}
 
@@ -232,10 +174,12 @@ func TestHandlerWaitFor(t *testing.T) {
 	defer cancel()
 
 	// Test timeout
-	v := h.WaitFor(ctx, func(v any) bool {
+	v, err := h.WaitFor(ctx, func(*gateway.TypingStartEvent) bool {
 		return false
 	})
-
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal("Unexpected error:", err)
+	}
 	if v != nil {
 		t.Fatal("Unexpected value:", v)
 	}
@@ -255,12 +199,7 @@ func TestHandlerChanFor(t *testing.T) {
 		wanted,
 	}
 
-	inc, cancel := h.ChanFor(func(v any) bool {
-		tp, ok := v.(*gateway.TypingStartEvent)
-		if !ok {
-			return false
-		}
-
+	inc, cancel := h.ChanFor(func(tp *gateway.TypingStartEvent) bool {
 		return tp.ChannelID == wanted.ChannelID
 	})
 	defer cancel()
@@ -269,30 +208,36 @@ func TestHandlerChanFor(t *testing.T) {
 		h.Call(ev)
 	}
 
-	recv := <-inc
-	if recv != wanted {
+	if recv := <-inc; recv != wanted {
 		t.Fatal("Unexpected receive:", recv)
 	}
 }
 
-func BenchmarkReflect(b *testing.B) {
-	h, err := newHandler(func(m *gateway.MessageCreateEvent) {}, false)
-	if err != nil {
-		b.Fatal(err)
+func benchCall(b *testing.B, register func(h *Handler)) {
+	h := New()
+	register(h)
+	ev := newMessage("")
+	b.ReportAllocs()
+	for b.Loop() {
+		h.Call(ev)
 	}
+}
 
-	var msg = &gateway.MessageCreateEvent{}
+func BenchmarkCallTyped(b *testing.B) {
+	benchCall(b, func(h *Handler) { h.AddSyncHandler(func(*gateway.MessageCreateEvent) {}) })
+}
 
-	b.ResetTimer()
+func BenchmarkCallIface(b *testing.B) {
+	benchCall(b, func(h *Handler) { h.AddSyncHandler(func(gateway.Event) {}) })
+}
 
-	for n := 0; n < b.N; n++ {
-		var msgV = reflect.ValueOf(msg)
-		var msgT = msgV.Type()
-
-		if h.not(msgT) {
-			b.Fatal("Event type mismatch")
+func BenchmarkCall20Mixed(b *testing.B) {
+	benchCall(b, func(h *Handler) {
+		for range 10 {
+			h.AddSyncHandler(func(*gateway.MessageCreateEvent) {})
+			h.AddSyncHandler(func(*gateway.TypingStartEvent) {})
 		}
-
-		h.call(msgV)
-	}
+		h.AddSyncHandler(func(any) {})
+		h.AddSyncHandler(func(gateway.Event) {})
+	})
 }

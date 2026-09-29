@@ -47,10 +47,13 @@ func (e ReconnectError) Error() string {
 // Unwrap returns e.Err.
 func (e ReconnectError) Unwrap() error { return e.Err }
 
+var (
+	_ MainSession = (*session.Session)(nil)
+	_ MainSession = (*state.State)(nil)
+)
+
 // MainSession abstracts both session.Session and state.State.
 type MainSession interface {
-	// AddHandler describes the method in handler.Handler.
-	AddHandler(handler any) (rm func())
 	// Me returns the current user.
 	Me() (*discord.User, error)
 	// Channel queries for the channel with the given ID.
@@ -59,16 +62,12 @@ type MainSession interface {
 	SendGateway(ctx context.Context, m ws.Event) error
 }
 
-var (
-	_ MainSession = (*session.Session)(nil)
-	_ MainSession = (*state.State)(nil)
-)
-
 // Session is a single voice session that wraps around the voice gateway and UDP
 // connection.
 type Session struct {
 	*handler.Handler
 	session MainSession
+	events  *handler.Handler
 
 	mut sync.RWMutex
 	// connected is a non-nil blocking channel after Join is called and is
@@ -101,25 +100,25 @@ type Session struct {
 	disconnectClosed bool
 }
 
-// NewSession creates a new voice session for the current user.
-func NewSession(state MainSession) (*Session, error) {
+// NewSession creates a new voice session for the current user. events is the handler that the main session dispatches gateway events to.
+func NewSession(state MainSession, events *handler.Handler) (*Session, error) {
 	u, err := state.Me()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get me: %w", err)
 	}
 
-	return NewSessionCustom(state, u.ID), nil
+	return NewSessionCustom(state, events, u.ID), nil
 }
 
-// NewSessionCustom creates a new voice session from the given session and user
-// ID.
-func NewSessionCustom(ses MainSession, userID discord.UserID) *Session {
+// NewSessionCustom creates a new voice session from the given session, its event handler and user ID.
+func NewSessionCustom(ses MainSession, events *handler.Handler, userID discord.UserID) *Session {
 	closed := make(chan struct{})
 	close(closed)
 
 	session := &Session{
 		Handler: handler.New(),
 		session: ses,
+		events:  events,
 		state: voicegateway.State{
 			UserID: userID,
 		},
@@ -244,8 +243,8 @@ func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute,
 
 	if s.detachReconnect == nil {
 		s.detachReconnect = []func(){
-			s.session.AddHandler(s.updateServer),
-			s.session.AddHandler(s.updateState),
+			s.events.AddHandler(s.updateServer),
+			s.events.AddHandler(s.updateState),
 		}
 	}
 
@@ -256,8 +255,8 @@ func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute,
 
 	// Bind the handlers.
 	cancels := []func(){
-		s.session.AddHandler(chs.serverUpdate),
-		s.session.AddHandler(chs.stateUpdate),
+		s.events.AddChanHandler(chs.serverUpdate),
+		s.events.AddChanHandler(chs.stateUpdate),
 	}
 	// Disconnects the handlers once the function exits.
 	defer func() {

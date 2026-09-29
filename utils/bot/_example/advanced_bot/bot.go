@@ -74,22 +74,14 @@ func (bot *Bot) Repeat(m *gateway.MessageCreateEvent) (string, error) {
 
 	// This might miss events that are sent immediately after. To make sure all
 	// events are caught, ChanFor should be used.
-	v := bot.Ctx.WaitFor(ctx, func(v interface{}) bool {
-		// Incoming event is a message create event:
-		mg, ok := v.(*gateway.MessageCreateEvent)
-		if !ok {
-			return false
-		}
-
+	ev, err := bot.Ctx.WaitFor(ctx, func(mg *gateway.MessageCreateEvent) bool {
 		// Message is from the same author:
 		return mg.Author.ID == m.Author.ID
 	})
-
-	if v == nil {
+	if err != nil {
 		return "", errors.New("timed out waiting for response")
 	}
 
-	ev := v.(*gateway.MessageCreateEvent)
 	return ev.Content, nil
 }
 

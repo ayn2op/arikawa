@@ -60,7 +60,7 @@ const (
 )
 
 func start(ctx context.Context, s *state.State, id discord.ChannelID, file string) error {
-	v, err := voice.NewSession(s)
+	v, err := voice.NewSession(s, s.Handler)
 	if err != nil {
 		return fmt.Errorf("cannot make new voice session: %w", err)
 	}

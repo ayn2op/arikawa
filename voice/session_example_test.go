@@ -46,7 +46,7 @@ func ExampleSession() {
 	}
 	defer s.Close()
 
-	v, err := voice.NewSession(s)
+	v, err := voice.NewSession(s, s.Handler)
 	if err != nil {
 		log.Panicln("failed to create voice session:", err)
 	}

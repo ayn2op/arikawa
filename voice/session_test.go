@@ -85,7 +85,7 @@ func TestIntegration(t *testing.T) {
 }
 
 func testIntegrationOnce(t *testing.T, s *testState) {
-	v, err := NewSession(s)
+	v, err := NewSession(s, s.Handler)
 	if err != nil {
 		t.Fatal("failed to create a new voice session:", err)
 	}
@@ -254,7 +254,7 @@ func TestRegionChange(t *testing.T) {
 func testReconnect(t *testing.T, interrupt func(*testState)) error {
 	s := testOpen(t)
 
-	v, err := NewSession(s)
+	v, err := NewSession(s, s.Handler)
 	if err != nil {
 		t.Fatal("cannot")
 	}

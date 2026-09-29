@@ -205,38 +205,13 @@ func (c *Client) AllGuildsWithCounts() ([]discord.Guild, error) {
 //
 // Requires the guilds OAuth2 scope.
 func (c *Client) GuildsBefore(data GuildsBeforeData) ([]discord.Guild, error) {
-	guilds := make([]discord.Guild, 0, data.Limit)
-
-	fetch := uint(MaxGuildFetchLimit)
-
-	unlimited := data.Limit == 0
-
-	for data.Limit > 0 || unlimited {
-		if data.Limit > 0 {
-			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(MaxGuildFetchLimit, int(data.Limit)))
-			data.Limit -= fetch
+	return paginate(data.Limit, MaxGuildFetchLimit, true, func(n uint) ([]discord.Guild, error) {
+		g, err := c.guildsRange(data.BeforeID, 0, n, data.WithCounts)
+		if len(g) > 0 {
+			data.BeforeID = g[0].ID
 		}
-
-		g, err := c.guildsRange(data.BeforeID, 0, fetch, data.WithCounts)
-		if err != nil {
-			return guilds, err
-		}
-		guilds = append(g, guilds...)
-
-		if len(g) < MaxGuildFetchLimit {
-			break
-		}
-
-		data.BeforeID = g[0].ID
-	}
-
-	if len(guilds) == 0 {
-		return nil, nil
-	}
-
-	return guilds, nil
+		return g, err
+	})
 }
 
 // GuildsAfter returns a list of partial guild objects the current user is a
@@ -252,38 +227,13 @@ func (c *Client) GuildsBefore(data GuildsBeforeData) ([]discord.Guild, error) {
 //
 // Requires the guilds OAuth2 scope.
 func (c *Client) GuildsAfter(data GuildsAfterData) ([]discord.Guild, error) {
-	guilds := make([]discord.Guild, 0, data.Limit)
-
-	fetch := uint(MaxGuildFetchLimit)
-
-	unlimited := data.Limit == 0
-
-	for data.Limit > 0 || unlimited {
-		if data.Limit > 0 {
-			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(MaxGuildFetchLimit, int(data.Limit)))
-			data.Limit -= fetch
+	return paginate(data.Limit, MaxGuildFetchLimit, false, func(n uint) ([]discord.Guild, error) {
+		g, err := c.guildsRange(0, data.AfterID, n, data.WithCounts)
+		if len(g) > 0 {
+			data.AfterID = g[len(g)-1].ID
 		}
-
-		g, err := c.guildsRange(0, data.AfterID, fetch, data.WithCounts)
-		if err != nil {
-			return guilds, err
-		}
-		guilds = append(guilds, g...)
-
-		if len(g) < MaxGuildFetchLimit {
-			break
-		}
-
-		data.AfterID = g[len(g)-1].ID
-	}
-
-	if len(guilds) == 0 {
-		return nil, nil
-	}
-
-	return guilds, nil
+		return g, err
+	})
 }
 
 func (c *Client) guildsRange(

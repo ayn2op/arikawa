@@ -55,42 +55,13 @@ func (c *Client) MessagesAround(
 // The returned slice will be sorted from latest to oldest.
 func (c *Client) MessagesBefore(
 	channelID discord.ChannelID, before discord.MessageID, limit uint) ([]discord.Message, error) {
-
-	msgs := make([]discord.Message, 0, limit)
-
-	fetch := uint(maxMessageFetchLimit)
-
-	// Check if we are truly fetching unlimited messages to avoid confusion
-	// later on, if the limit reaches 0.
-	unlimited := limit == 0
-
-	for limit > 0 || unlimited {
-		if limit > 0 {
-			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(maxMessageFetchLimit, int(limit)))
-			limit -= maxMessageFetchLimit
+	return paginate(limit, maxMessageFetchLimit, false, func(n uint) ([]discord.Message, error) {
+		m, err := c.messagesRange(channelID, before, 0, 0, n)
+		if len(m) > 0 {
+			before = m[len(m)-1].ID
 		}
-
-		m, err := c.messagesRange(channelID, before, 0, 0, fetch)
-		if err != nil {
-			return msgs, err
-		}
-		// Append the older messages into the list of newer messages.
-		msgs = append(msgs, m...)
-
-		if len(m) < maxMessageFetchLimit {
-			break
-		}
-
-		before = m[len(m)-1].ID
-	}
-
-	if len(msgs) == 0 {
-		return nil, nil
-	}
-
-	return msgs, nil
+		return m, err
+	})
 }
 
 // MessagesAfter returns a slice filled with the messages sent in the channel
@@ -113,41 +84,13 @@ func (c *Client) MessagesAfter(
 		after = 1
 	}
 
-	var msgs []discord.Message
-
-	fetch := uint(maxMessageFetchLimit)
-
-	// Check if we are truly fetching unlimited messages to avoid confusion
-	// later on, if the limit reaches 0.
-	unlimited := limit == 0
-
-	for limit > 0 || unlimited {
-		if limit > 0 {
-			// Only fetch as much as we need. Since limit gradually decreases,
-			// we only need to fetch min(fetch, limit).
-			fetch = uint(min(maxMessageFetchLimit, int(limit)))
-			limit -= maxMessageFetchLimit
+	return paginate(limit, maxMessageFetchLimit, true, func(n uint) ([]discord.Message, error) {
+		m, err := c.messagesRange(channelID, 0, after, 0, n)
+		if len(m) > 0 {
+			after = m[0].ID
 		}
-
-		m, err := c.messagesRange(channelID, 0, after, 0, fetch)
-		if err != nil {
-			return msgs, err
-		}
-		// Prepend the older messages into the newly-fetched messages list.
-		msgs = append(m, msgs...)
-
-		if len(m) < maxMessageFetchLimit {
-			break
-		}
-
-		after = m[0].ID
-	}
-
-	if len(msgs) == 0 {
-		return nil, nil
-	}
-
-	return msgs, nil
+		return m, err
+	})
 }
 
 type messagesRangeParams struct {

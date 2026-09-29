@@ -120,3 +120,37 @@ func (r AuditLogReason) Header() http.Header {
 
 	return http.Header{"X-Audit-Log-Reason": []string{string(r)}}
 }
+
+// paginate calls fetch with page sizes of at most pageSize until limit items are fetched, or all of them if limit is 0, stopping early on a short page. fetch must advance its own cursor. If prepend is true, each page is put before the previous ones.
+func paginate[T any](limit uint, pageSize int, prepend bool, fetch func(n uint) ([]T, error)) ([]T, error) {
+	var all []T
+	unlimited := limit == 0
+
+	for limit > 0 || unlimited {
+		n := uint(pageSize)
+		if limit > 0 {
+			n = min(n, limit)
+			limit -= n
+		}
+
+		page, err := fetch(n)
+		if err != nil {
+			return all, err
+		}
+
+		if prepend {
+			all = append(page, all...)
+		} else {
+			all = append(all, page...)
+		}
+
+		if len(page) < pageSize {
+			break
+		}
+	}
+
+	if len(all) == 0 {
+		return nil, nil
+	}
+	return all, nil
+}

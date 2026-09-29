@@ -40,40 +40,13 @@ func (c *Client) AllMembers(guildID discord.GuildID) ([]discord.Member, error) {
 // they may be less, if no more members are available.
 func (c *Client) MembersAfter(
 	guildID discord.GuildID, after discord.UserID, limit uint) ([]discord.Member, error) {
-
-	mems := make([]discord.Member, 0, limit)
-
-	fetch := uint(MaxMemberFetchLimit)
-
-	unlimited := limit == 0
-
-	for limit > 0 || unlimited {
-		// Only fetch as much as we need. Since limit gradually decreases,
-		// we only need to fetch min(fetch, limit).
-		if limit > 0 {
-			fetch = uint(min(MaxMemberFetchLimit, int(limit)))
-			limit -= fetch
+	return paginate(limit, MaxMemberFetchLimit, false, func(n uint) ([]discord.Member, error) {
+		m, err := c.membersAfter(guildID, after, n)
+		if len(m) > 0 {
+			after = m[len(m)-1].User.ID
 		}
-
-		m, err := c.membersAfter(guildID, after, fetch)
-		if err != nil {
-			return mems, err
-		}
-		mems = append(mems, m...)
-
-		// There aren't any to fetch, even if this is less than limit.
-		if len(m) < MaxMemberFetchLimit {
-			break
-		}
-
-		after = mems[len(mems)-1].User.ID
-	}
-
-	if len(mems) == 0 {
-		return nil, nil
-	}
-
-	return mems, nil
+		return m, err
+	})
 }
 
 func (c *Client) membersAfter(

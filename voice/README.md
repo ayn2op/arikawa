@@ -58,6 +58,22 @@ which will be sent to the **Voice Server**. `(*voice.Session)` also implements `
 `(*voice.Session).StopSpeaking()`, then any required voice cleanup (closing streams, etc.), then
 `(*voice.Session).Disconnect()`
 
+## End-to-End Encryption
+
+Discord requires the [DAVE protocol](https://daveprotocol.com) in every voice channel but stage
+channels, and closes the **Discord Voice Gateway** with code 4017 without it. The **library**
+speaks the protocol's opcodes and encrypts and decrypts each **Voice Packet**, but leaves the
+key exchange to an implementation of [godave](https://github.com/disgoorg/godave), which the
+**application** sets before joining:
+
+```go
+v, err := voice.NewSession(s, s.Handler)
+// handle err
+v.DAVE = golibdave.NewSession
+```
+
+Without one, nothing is encrypted end to end, which only stage channels allow.
+
 ## Examples
 
 Check the integration tests at [voice/integration_test.go](https://github.com/diamondburned/arikawa/blob/master/voice/integration_test.go).

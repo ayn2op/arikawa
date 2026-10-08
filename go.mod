@@ -3,6 +3,7 @@ module github.com/ayn2op/arikawa/v3
 go 1.27.0
 
 require (
+	github.com/disgoorg/godave v0.3.0
 	github.com/gorilla/schema v1.4.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/kylelemons/godebug v1.1.0

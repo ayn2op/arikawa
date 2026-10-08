@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"bytes"
 	"compress/zlib"
 	"context"
 	"errors"
@@ -27,8 +28,10 @@ type Connection interface {
 	// timeout. This method should also be re-usable after Close is called.
 	Dial(context.Context, string) (<-chan Op, error)
 
-	// Send allows the caller to send bytes.
+	// Send allows the caller to send bytes as a text message.
 	Send(context.Context, []byte) error
+	// SendBinary is Send for a binary message.
+	SendBinary(context.Context, []byte) error
 
 	// Close should close the websocket connection. The underlying connection
 	// may be reused, but this Connection instance will be reused with Dial. The
@@ -184,6 +187,15 @@ var resetDeadline = time.Time{}
 
 // Send implements Connection.
 func (c *Conn) Send(ctx context.Context, b []byte) error {
+	return c.send(ctx, websocket.TextMessage, b)
+}
+
+// SendBinary implements Connection.
+func (c *Conn) SendBinary(ctx context.Context, b []byte) error {
+	return c.send(ctx, websocket.BinaryMessage, b)
+}
+
+func (c *Conn) send(ctx context.Context, messageType int, b []byte) error {
 	c.mut.Lock()
 	conn := c.conn
 	c.mut.Unlock()
@@ -204,7 +216,7 @@ func (c *Conn) Send(ctx context.Context, b []byte) error {
 			}
 		}
 
-		return conn.WriteMessage(websocket.TextMessage, b)
+		return conn.WriteMessage(messageType, b)
 	case <-ctx.Done():
 		return ctx.Err()
 	}
@@ -264,7 +276,16 @@ func (state *loopState) handle(ctx context.Context, opCh chan<- Op) error {
 	}
 
 	if t == websocket.BinaryMessage {
-		// Probably a zlib payload.
+		b, err := io.ReadAll(r)
+		if err != nil {
+			return err
+		}
+		if op, ok := state.codec.decodeBinary(b); ok {
+			return state.codec.send(ctx, opCh, op)
+		}
+
+		// Otherwise, a zlib payload.
+		r = bytes.NewReader(b)
 
 		if state.zlib == nil {
 			z, err := zlib.NewReader(r)

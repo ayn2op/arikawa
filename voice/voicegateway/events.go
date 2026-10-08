@@ -1,6 +1,8 @@
 package voicegateway
 
 import (
+	"encoding/binary"
+	"io"
 	"strconv"
 
 	"github.com/ayn2op/arikawa/v3/discord"
@@ -16,10 +18,14 @@ var OpUnmarshalers = ws.NewOpUnmarshalers()
 //
 // https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection-example-voice-identify-payload
 type IdentifyCommand struct {
-	GuildID   discord.GuildID `json:"server_id"` // yes, this should be "server_id"
-	UserID    discord.UserID  `json:"user_id"`
-	SessionID string          `json:"session_id"`
-	Token     string          `json:"token"`
+	// GuildID is the channel ID for a private channel.
+	GuildID   discord.GuildID   `json:"server_id"` // yes, this should be "server_id"
+	ChannelID discord.ChannelID `json:"channel_id"`
+	UserID    discord.UserID    `json:"user_id"`
+	SessionID string            `json:"session_id"`
+	Token     string            `json:"token"`
+	// MaxDAVEProtocolVersion is the highest DAVE protocol version supported, 0 being none.
+	MaxDAVEProtocolVersion int `json:"max_dave_protocol_version"`
 }
 
 // SelectProtocolCommand is a command for Op 1.
@@ -63,7 +69,12 @@ func (r ReadyEvent) Addr() string {
 // HeartbeatCommand is a command for Op 3.
 //
 // https://discord.com/developers/docs/topics/voice-connections#heartbeating-example-heartbeat-payload
-type HeartbeatCommand uint64
+type HeartbeatCommand struct {
+	// T is a nonce that the gateway sends back in HeartbeatAckEvent.
+	T int64 `json:"t"`
+	// SeqAck is the sequence number of the last event received.
+	SeqAck int64 `json:"seq_ack,omitempty"`
+}
 
 // SessionDescriptionEvent is an event for Op 4.
 //
@@ -71,6 +82,8 @@ type HeartbeatCommand uint64
 type SessionDescriptionEvent struct {
 	Mode      string   `json:"mode"`
 	SecretKey [32]byte `json:"secret_key"`
+	// DAVEProtocolVersion is the DAVE protocol version to use, 0 being none.
+	DAVEProtocolVersion uint16 `json:"dave_protocol_version"`
 }
 
 // https://discord.com/developers/docs/topics/voice-connections#speaking
@@ -97,15 +110,21 @@ type SpeakingEvent struct {
 // HeartbeatAckEvent is an event for Op 6.
 //
 // https://discord.com/developers/docs/topics/voice-connections#heartbeating-example-heartbeat-ack-payload
-type HeartbeatAckEvent uint64
+type HeartbeatAckEvent struct {
+	T int64 `json:"t"`
+}
 
 // ResumeCommand is a command for Op 7.
 //
 // https://discord.com/developers/docs/topics/voice-connections#resuming-voice-connection-example-resume-connection-payload
 type ResumeCommand struct {
-	GuildID   discord.GuildID `json:"server_id"` // yes, this should be "server_id"
-	SessionID string          `json:"session_id"`
-	Token     string          `json:"token"`
+	// GuildID is the channel ID for a private channel.
+	GuildID   discord.GuildID   `json:"server_id"` // yes, this should be "server_id"
+	ChannelID discord.ChannelID `json:"channel_id"`
+	SessionID string            `json:"session_id"`
+	Token     string            `json:"token"`
+	// SeqAck is the sequence number of the last event received.
+	SeqAck int64 `json:"seq_ack,omitempty"`
 }
 
 // HelloEvent is an event for Op 8.
@@ -119,16 +138,109 @@ type HelloEvent struct {
 // https://discord.com/developers/docs/topics/voice-connections#resuming-voice-connection-example-resumed-payload
 type ResumedEvent struct{}
 
-// ClientConnectEvent is an event for Op 12. It is undocumented.
-type ClientConnectEvent struct {
-	UserID    discord.UserID `json:"user_id"`
-	AudioSSRC uint32         `json:"audio_ssrc"`
-	VideoSSRC uint32         `json:"video_ssrc"`
+// ClientsConnectEvent is an event for Op 11. It is sent after connecting for
+// the users already in the channel and whenever users connect.
+type ClientsConnectEvent struct {
+	UserIDs []discord.UserID `json:"user_ids"`
 }
 
-// ClientDisconnectEvent is an event for Op 13. It is undocumented, but its
-// existence is mentioned in this issue:
-// https://github.com/discord/discord-api-docs/issues/510.
+// ClientDisconnectEvent is an event for Op 13.
 type ClientDisconnectEvent struct {
 	UserID discord.UserID `json:"user_id"`
+}
+
+// DAVEPrepareTransitionEvent is an event for Op 21. It announces a downgrade
+// from the DAVE protocol.
+//
+// https://daveprotocol.com/#voice-gateway-opcodes
+type DAVEPrepareTransitionEvent struct {
+	ProtocolVersion uint16 `json:"protocol_version"`
+	TransitionID    uint16 `json:"transition_id"`
+}
+
+// DAVEExecuteTransitionEvent is an event for Op 22.
+type DAVEExecuteTransitionEvent struct {
+	TransitionID uint16 `json:"transition_id"`
+}
+
+// DAVETransitionReadyCommand is a command for Op 23.
+type DAVETransitionReadyCommand struct {
+	TransitionID uint16 `json:"transition_id"`
+}
+
+// DAVEPrepareEpochEvent is an event for Op 24. It announces a change of the
+// DAVE protocol version or of the MLS group.
+type DAVEPrepareEpochEvent struct {
+	ProtocolVersion uint16 `json:"protocol_version"`
+	Epoch           int    `json:"epoch"`
+}
+
+// MLSExternalSenderEvent is an event for Op 25. It is a binary message.
+type MLSExternalSenderEvent []byte
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (e *MLSExternalSenderEvent) UnmarshalBinary(b []byte) error {
+	*e = b
+	return nil
+}
+
+// MLSKeyPackageCommand is a command for Op 26. It is a binary message.
+type MLSKeyPackageCommand []byte
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (c *MLSKeyPackageCommand) MarshalBinary() ([]byte, error) {
+	return *c, nil
+}
+
+// MLSProposalsEvent is an event for Op 27. It is a binary message.
+type MLSProposalsEvent []byte
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (e *MLSProposalsEvent) UnmarshalBinary(b []byte) error {
+	*e = b
+	return nil
+}
+
+// MLSCommitWelcomeCommand is a command for Op 28. It is a binary message of a
+// commit and an optional welcome.
+type MLSCommitWelcomeCommand []byte
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (c *MLSCommitWelcomeCommand) MarshalBinary() ([]byte, error) {
+	return *c, nil
+}
+
+// MLSAnnounceCommitEvent is an event for Op 29. It is a binary message.
+type MLSAnnounceCommitEvent struct {
+	TransitionID uint16
+	Commit       []byte
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (e *MLSAnnounceCommitEvent) UnmarshalBinary(b []byte) error {
+	if len(b) < 2 {
+		return io.ErrUnexpectedEOF
+	}
+	e.TransitionID, e.Commit = binary.BigEndian.Uint16(b), b[2:]
+	return nil
+}
+
+// MLSWelcomeEvent is an event for Op 30. It is a binary message.
+type MLSWelcomeEvent struct {
+	TransitionID uint16
+	Welcome      []byte
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (e *MLSWelcomeEvent) UnmarshalBinary(b []byte) error {
+	if len(b) < 2 {
+		return io.ErrUnexpectedEOF
+	}
+	e.TransitionID, e.Welcome = binary.BigEndian.Uint16(b), b[2:]
+	return nil
+}
+
+// MLSInvalidCommitWelcomeCommand is a command for Op 31.
+type MLSInvalidCommitWelcomeCommand struct {
+	TransitionID uint16 `json:"transition_id"`
 }

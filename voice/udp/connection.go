@@ -3,20 +3,37 @@ package udp
 import (
 	"bytes"
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"golang.org/x/crypto/nacl/secretbox"
+	"golang.org/x/crypto/chacha20poly1305"
 )
 
 // ErrDecryptionFailed is returned from ReadPacket if the received packet fails
 // to decrypt.
 var ErrDecryptionFailed = errors.New("decryption failed")
+
+// The encryption modes that a Connection can use.
+//
+// https://docs.discord.food/topics/voice-connections#transport-encryption-mode
+const (
+	ModeAES256GCM         = "aead_aes256_gcm_rtpsize"
+	ModeXChaCha20Poly1305 = "aead_xchacha20_poly1305_rtpsize"
+)
+
+// Modes returns the encryption modes that a Connection can use, the most
+// preferred first.
+func Modes() []string {
+	return []string{ModeAES256GCM, ModeXChaCha20Poly1305}
+}
 
 // defaultDialer is the default dialer that this package uses for all its
 // dialing.
@@ -38,17 +55,25 @@ type Connection struct {
 	stopFreq  chan struct{}
 
 	packet [12]byte
-	secret [32]byte
+	aead   cipher.AEAD
 
 	sequence  uint16
 	timestamp uint32
-	nonce     [24]byte
+	// written is when Write was last called.
+	written time.Time
+	// nonce is a counter in its first 4 bytes, which are sent after the packet.
+	// It is as long as the longest that a mode needs.
+	nonce [24]byte
 
 	// recv fields
 	recvNonce  [24]byte
 	recvBuf    []byte  // len 1400
 	recvOpus   []byte  // len 1400
 	recvPacket *Packet // uses recvOpus' backing array
+
+	// pinged is when the voice server was last pinged, and latency how long it
+	// took to answer, both in nanoseconds.
+	pinged, latency atomic.Int64
 
 	closed sync.Once
 }
@@ -117,7 +142,7 @@ func DialConnectionCustom(
 	}
 
 	ip := ipbody[:nullPos]
-	port := binary.LittleEndian.Uint16(ipBuffer[72:74])
+	port := binary.BigEndian.Uint16(ipBuffer[72:74])
 
 	// https://discord.com/developers/docs/topics/voice-connections#encrypting-and-sending-voice
 	packet := [12]byte{
@@ -130,7 +155,7 @@ func DialConnectionCustom(
 	// Write SSRC to the header.
 	binary.BigEndian.PutUint32(packet[8:12], ssrc) // SSRC
 
-	return &Connection{
+	c := &Connection{
 		GatewayIP:   string(ip),
 		GatewayPort: port,
 		frequency:   time.NewTicker(20 * time.Millisecond),
@@ -142,7 +167,41 @@ func DialConnectionCustom(
 		recvBuf:     make([]byte, 1400),
 		recvOpus:    make([]byte, 1400),
 		recvPacket:  &Packet{},
-	}, nil
+		written:     time.Now(),
+	}
+	go c.keepAlive()
+	return c, nil
+}
+
+// Latency returns how long the voice server took to answer the last ping that
+// ReadPacket read the answer to, or 0 if it has read none.
+func (c *Connection) Latency() time.Duration {
+	return time.Duration(c.latency.Load())
+}
+
+// keepAlive pings the voice server every 5 seconds until the connection is
+// closed, so that what is between them keeps passing packets on when nothing
+// is written.
+//
+// https://docs.discord.food/topics/voice-connections#udp-ping
+func (c *Connection) keepAlive() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	ping := []byte{0x13, 0x37, 0xCA, 0xFE, 0, 0, 0, 0}
+	for seq := uint32(0); ; seq++ {
+		binary.BigEndian.PutUint32(ping[4:], seq)
+		c.pinged.Store(time.Now().UnixNano())
+		if _, err := c.conn.Write(ping); err != nil {
+			return
+		}
+
+		select {
+		case <-ticker.C:
+		case <-c.stopFreq:
+			return
+		}
+	}
 }
 
 // ResetFrequency resets the internal frequency ticker as well as the timestamp
@@ -174,10 +233,22 @@ func (c *Connection) ResetFrequency(frameDuration time.Duration, timeIncr uint32
 	c.timeIncr = timeIncr
 }
 
-// UseSecret uses the given secret. This method is not thread-safe, so it should
-// only be used right after initialization.
-func (c *Connection) UseSecret(secret [32]byte) {
-	c.secret = secret
+// UseSecret encrypts with the given secret in the given mode, which must be
+// one of those that Modes returns. This method is not thread-safe, so it should only be used right
+// after initialization.
+func (c *Connection) UseSecret(mode string, secret [32]byte) (err error) {
+	switch mode {
+	case ModeAES256GCM:
+		var block cipher.Block
+		if block, err = aes.NewCipher(secret[:]); err == nil {
+			c.aead, err = cipher.NewGCM(block)
+		}
+	case ModeXChaCha20Poly1305:
+		c.aead, err = chacha20poly1305.NewX(secret[:])
+	default:
+		err = fmt.Errorf("unknown encryption mode %q", mode)
+	}
+	return err
 }
 
 // SetWriteDeadline sets the UDP connection's write deadline.
@@ -209,15 +280,23 @@ func (c *Connection) Write(b []byte) (int, error) {
 	binary.BigEndian.PutUint16(c.packet[2:4], c.sequence)
 	c.sequence++
 
+	// A pause in what is written is one in its timestamps too, at 48kHz, for
+	// what is written after it not to seem to arrive late.
+	now := time.Now()
+	if pause := uint32(now.Sub(c.written) * 48000 / time.Second); pause > 5*c.timeIncr {
+		c.timestamp += pause - pause%c.timeIncr
+	}
+	c.written = now
+
 	binary.BigEndian.PutUint32(c.packet[4:8], c.timestamp)
 	c.timestamp += c.timeIncr
 
-	// Copy the first 12 bytes from the packet into the nonce.
-	copy(c.nonce[:12], c.packet[:])
+	binary.BigEndian.PutUint32(c.nonce[:4], binary.BigEndian.Uint32(c.nonce[:4])+1)
 
-	// Seal the message, but reuse the packet buffer. We pass in the first 12
-	// bytes of the packet, but allow it to reuse the whole packet buffer
-	toSend := secretbox.Seal(c.packet[:12], b, &c.nonce, &c.secret)
+	// Seal the message after the packet's header, which is authenticated but
+	// not encrypted, and send the nonce's counter after it.
+	toSend := c.aead.Seal(c.packet[:12], c.nonce[:c.aead.NonceSize()], b, c.packet[:12])
+	toSend = append(toSend, c.nonce[:4]...)
 
 	select {
 	case <-c.frequency.C:
@@ -278,81 +357,53 @@ func (c *Connection) ReadPacket() (*Packet, error) {
 			return nil, err
 		}
 
-		if i < packetHeaderSize || (c.recvBuf[0] != 0x80 && c.recvBuf[0] != 0x90) {
+		// The answer to a ping.
+		if i == 8 && binary.BigEndian.Uint32(c.recvBuf) == 0x1337F00D {
+			c.latency.Store(time.Now().UnixNano() - c.pinged.Load())
 			continue
 		}
 
-		// Copy the nonce to be read.
-		// TODO: once Go 1.17 is released, we can remove recvNonce and directly
-		// cast it as (*[packetHeaderSize]byte)(c.recvBuf).
-		copy(c.recvNonce[:], c.recvBuf[0:packetHeaderSize])
+		// Skip anything that is not RTP version 2 carrying Opus, such as RTCP.
+		if i < packetHeaderSize || c.recvBuf[0]>>6 != 2 || c.recvBuf[1]&0x7F != 0x78 {
+			continue
+		}
 
-		var ok bool
+		// The header that is authenticated but not encrypted also covers the
+		// CSRCs and the first 4 bytes of the extension, if any. The rest of the
+		// extension is encrypted along with the Opus data.
+		//
+		// https://tools.ietf.org/html/rfc3550#section-5.1
+		header := packetHeaderSize + 4*int(c.recvBuf[0]&0x0F)
+		extension := 0
+		if c.recvBuf[0]&0x10 != 0 && i >= header+4 {
+			extension = 4 * int(binary.BigEndian.Uint16(c.recvBuf[header+2:header+4]))
+			header += 4
+		}
+		if i < header+4 {
+			continue
+		}
 
-		// Open (decrypt) the rest of the received bytes.
-		c.recvPacket.Opus, ok = secretbox.Open(
-			c.recvOpus[:0], c.recvBuf[packetHeaderSize:i], &c.recvNonce, &c.secret)
-		if !ok {
+		// The last 4 bytes are the nonce's counter.
+		copy(c.recvNonce[:4], c.recvBuf[i-4:i])
+
+		opus, err := c.aead.Open(c.recvOpus[:0], c.recvNonce[:c.aead.NonceSize()], c.recvBuf[header:i-4], c.recvBuf[:header])
+		if err != nil {
 			return nil, ErrDecryptionFailed
 		}
-
-		// Partial structure of the RTP header for reference
-		//
-		//     0                   1                   2                   3
-		//     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-		//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-		//    |V=2|P|X|  CC   |M|     PT      |       sequence number         |
-		//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-		//    |                           timestamp                           |
-		//    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-		//
-		// References
-		//
-		//    https://tools.ietf.org/html/rfc3550#section-5.1
-		//
-
-		// We first check VersionFlags (8-bit) for whether or not the 4th bit
-		// (extension) is set. The value of 0x10 is 0b00010000. RFC3550 section
-		// 5.1 explains the extension bit as:
-		//
-		//    If the extension bit is set, the fixed header MUST be followed by
-		//    exactly one header extension, with a format defined in Section
-		//    5.3.1.
-		//
-		isExtension := c.recvPacket.VersionFlags()&0x10 == 0x10
-
-		// We then check for whether or not the marker bit (9th bit) is set. The
-		// 9th bit is carried over to the second byte (Type), so we check its
-		// presence with 0x80, or 0b10000000. RFC3550 section 5.1 explains the
-		// marker bit as:
-		//
-		//     The interpretation of the marker is defined by a profile.  It is
-		//     intended to allow significant events such as frame boundaries to
-		//     be marked in the packet stream.  A profile MAY define additional
-		//     marker bits or specify that there is no marker bit by changing
-		//     the number of bits in the payload type field (see Section 5.3).
-		//
-		// RFC3350 section 12.1 also writes:
-		//
-		//    When the RTCP packet type field is compared to the corresponding
-		//    octet of the RTP header, this range corresponds to the marker bit
-		//    being 1 (which it usually is not in data packets) and to the high
-		//    bit of the standard payload type field being 1 (since the static
-		//    payload types are typically defined in the low half).
-		//
-		// This implies that, when the marker bit is 1, the received packet is
-		// an RTCP packet and NOT an RTP packet; therefore, we must ignore the
-		// unknown sections, so we do a (NOT isMarker) check below.
-		isMarker := c.recvPacket.Type()&0x80 != 0x0
-
-		if isExtension && !isMarker {
-			extLen := binary.BigEndian.Uint16(c.recvPacket.Opus[2:4])
-			shift := 4 + 4*int(extLen)
-
-			if len(c.recvPacket.Opus) > shift {
-				c.recvPacket.Opus = c.recvPacket.Opus[shift:]
-			}
+		if len(opus) < extension {
+			continue
 		}
+		opus = opus[extension:]
+
+		// The padding bit means the last byte is the number of bytes of padding.
+		if c.recvBuf[0]&0x20 != 0 && len(opus) > 0 && int(opus[len(opus)-1]) <= len(opus) {
+			opus = opus[:len(opus)-int(opus[len(opus)-1])]
+		}
+		// A packet of only padding carries nothing.
+		if len(opus) == 0 {
+			continue
+		}
+		c.recvPacket.Opus = opus
 
 		return c.recvPacket, nil
 	}

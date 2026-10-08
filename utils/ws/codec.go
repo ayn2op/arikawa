@@ -2,6 +2,8 @@ package ws
 
 import (
 	"context"
+	"encoding"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net/http"
@@ -30,6 +32,8 @@ func NewCodec(unmarshalers OpUnmarshalers) Codec {
 type codecOp struct {
 	Op
 	Data json.Raw `json:"d,omitempty"`
+	// Seq is what the voice gateway calls Sequence.
+	Seq int64 `json:"seq"`
 }
 
 const maxSharedBufferSize = 1 << 15 // 32KB
@@ -60,6 +64,10 @@ func (c Codec) DecodeInto(ctx context.Context, r io.Reader, buf *DecodeBuffer, o
 
 	if err := json.DecodeStream(r, &op); err != nil {
 		return c.send(ctx, out, newErrOp(err, "cannot read JSON stream"))
+	}
+
+	if op.Seq != 0 {
+		op.Sequence = op.Seq
 	}
 
 	if EnableRawEvents {
@@ -97,6 +105,28 @@ func (c Codec) DecodeInto(ctx context.Context, r io.Reader, buf *DecodeBuffer, o
 	}
 
 	return c.send(ctx, out, op.Op)
+}
+
+// decodeBinary decodes b if it is a binary message, which is a sequence number,
+// an Op code and an event that is an encoding.BinaryUnmarshaler. Otherwise, b
+// is compressed JSON and false is returned.
+func (c Codec) decodeBinary(b []byte) (Op, bool) {
+	if len(b) < 3 {
+		return Op{}, false
+	}
+	fn := c.Unmarshalers.Lookup(OpCode(b[2]), "")
+	if fn == nil {
+		return Op{}, false
+	}
+	data := fn()
+	event, ok := data.(encoding.BinaryUnmarshaler)
+	if !ok {
+		return Op{}, false
+	}
+	if err := event.UnmarshalBinary(b[3:]); err != nil {
+		return newErrOp(err, fmt.Sprintf("cannot unmarshal binary event (op %d) from gateway", b[2])), true
+	}
+	return Op{Code: data.Op(), Data: data, Sequence: int64(binary.BigEndian.Uint16(b))}, true
 }
 
 func (c *Codec) send(ctx context.Context, ch chan<- Op, op Op) error {

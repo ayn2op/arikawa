@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -17,10 +18,14 @@ import (
 	"github.com/ayn2op/arikawa/v3/utils/ws/ophandler"
 	"github.com/ayn2op/arikawa/v3/voice/udp"
 	"github.com/ayn2op/arikawa/v3/voice/voicegateway"
+	"github.com/disgoorg/godave"
 )
 
-// Protocol is the encryption protocol that this library uses.
-const Protocol = "xsalsa20_poly1305"
+// Silence is the Opus frame of silence. Five of them should be written after
+// what is said, for it not to be interpolated with what is said next.
+//
+// https://docs.discord.food/topics/voice-connections#voice-data-interpolation
+const Silence = "\xF8\xFF\xFE"
 
 // ErrAlreadyConnecting is returned when the session is already connecting.
 var ErrAlreadyConnecting = errors.New("already connecting")
@@ -81,6 +86,14 @@ type Session struct {
 	// udpManager is the manager for a UDP connection. The user can use this to
 	// plug in a custom UDP dialer.
 	udpManager *udp.Manager
+
+	// DAVE creates the session that encrypts end to end for each channel
+	// joined. Discord needs it for all voice channels but stage channels. It
+	// is any implementation of godave, and nil by default, which does not
+	// encrypt.
+	DAVE godave.SessionCreateFunc
+	// sendBuf and recvBuf are what frames are encrypted and decrypted into.
+	sendBuf, recvBuf []byte
 
 	gateway  *voicegateway.Gateway
 	gwCancel context.CancelFunc
@@ -162,7 +175,7 @@ func (s *Session) acquireUpdate(f func()) {
 // updateServer is specifically used to monitor for reconnects.
 func (s *Session) updateServer(ev *gateway.VoiceServerUpdateEvent) {
 	s.acquireUpdate(func() {
-		if s.state.GuildID != ev.GuildID {
+		if s.state.GuildID != ev.GuildID || ev.Endpoint == "" {
 			return
 		}
 
@@ -181,6 +194,11 @@ func (s *Session) updateServer(ev *gateway.VoiceServerUpdateEvent) {
 func (s *Session) updateState(ev *gateway.VoiceStateUpdateEvent) {
 	s.acquireUpdate(func() {
 		if s.state.GuildID != ev.GuildID || s.state.UserID != ev.UserID {
+			return
+		}
+		// Anything else that changed, such as being muted, is no reason to
+		// reconnect.
+		if s.state.ChannelID == ev.ChannelID && s.state.SessionID == ev.SessionID {
 			return
 		}
 
@@ -240,6 +258,10 @@ func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute,
 		// Ensure that if `cID` is zero that it passes null to the update event.
 		s.state.ChannelID = discord.NullChannelID
 	}
+
+	// What a previous join got is of no use to this one: Discord sends a new
+	// session ID, token and endpoint.
+	s.state.SessionID, s.state.Token, s.state.Endpoint = "", "", ""
 
 	if s.detachReconnect == nil {
 		s.detachReconnect = []func(){
@@ -309,6 +331,10 @@ func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute,
 		}
 	}
 
+	if err != nil {
+		return fmt.Errorf("cannot ask Discord for events: %w", err)
+	}
+
 	// These 2 methods should've updated s.state before sending into these
 	// channels. Since s.state is already filled, we can go ahead and connect.
 
@@ -349,7 +375,9 @@ func (s *Session) waitForIncoming(ctx context.Context, chs waitEventChs) error {
 	for !(server && state) {
 		select {
 		case ev := <-chs.serverUpdate:
-			if s.state.GuildID != ev.GuildID {
+			// An empty endpoint means the voice server is being reallocated,
+			// and another event follows once it is.
+			if s.state.GuildID != ev.GuildID || ev.Endpoint == "" {
 				continue
 			}
 			s.state.Endpoint = ev.Endpoint
@@ -389,7 +417,7 @@ func (s *Session) reconnectCtx(ctx context.Context) error {
 	s.ensureClosed()
 
 	ws.WSDebug("Start gateway.")
-	s.gateway = voicegateway.New(s.state)
+	s.gateway = voicegateway.New(s.state, s.DAVE)
 
 	// Open the voice gateway. The function will block until Ready is received.
 	gwctx, gwcancel := context.WithCancel(context.Background())
@@ -438,6 +466,13 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 			case *voicegateway.ReadyEvent:
 				ws.WSDebug("Got ready from voice gateway, SSRC:", data.SSRC)
 
+				// Use the encryption mode that we prefer of those offered.
+				modes := udp.Modes()
+				mode := slices.IndexFunc(modes, func(mode string) bool { return slices.Contains(data.Modes, mode) })
+				if mode < 0 {
+					return fmt.Errorf("no supported encryption mode in %q", data.Modes)
+				}
+
 				// Prepare the UDP voice connection.
 				conn, err = s.udpManager.Dial(ctx, data.Addr(), data.SSRC)
 				if err != nil {
@@ -449,7 +484,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 					Data: voicegateway.SelectProtocolData{
 						Address: conn.GatewayIP,
 						Port:    conn.GatewayPort,
-						Mode:    Protocol,
+						Mode:    modes[mode],
 					},
 				}); err != nil {
 					return fmt.Errorf("failed to send SelectProtocolCommand: %w", err)
@@ -463,8 +498,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 				ws.WSDebug("Received secret key from voice gateway")
 
 				// We're done.
-				conn.UseSecret(data.SecretKey)
-				return nil
+				return conn.UseSecret(data.Mode, data.SecretKey)
 			}
 
 			// Dispatch this event to the handler.
@@ -496,14 +530,74 @@ func (s *Session) Speaking(ctx context.Context, flag voicegateway.SpeakingFlag) 
 // as calling other methods of Session goes; HOWEVER it is not thread safe to
 // call Write itself concurrently.
 func (s *Session) Write(b []byte) (int, error) {
-	return s.udpManager.Write(b)
+	s.mut.RLock()
+	gateway := s.gateway
+	s.mut.RUnlock()
+
+	if gateway == nil || gateway.Ready() == nil {
+		return 0, ErrCannotSend
+	}
+	dave := gateway.DAVE()
+
+	// Until the others in the channel can decrypt what is sent, send silence
+	// in its place, which is not encrypted and keeps the pace.
+	frame := b
+	if !dave.Ready() {
+		frame = []byte(Silence)
+	}
+
+	s.sendBuf = slices.Grow(s.sendBuf[:0], dave.MaxEncryptedFrameSize(len(frame)))
+	n, err := dave.Encrypt(gateway.Ready().SSRC, frame, s.sendBuf[:cap(s.sendBuf)])
+	if err != nil {
+		return 0, fmt.Errorf("failed to encrypt end to end: %w", err)
+	}
+	if _, err := s.udpManager.Write(s.sendBuf[:n]); err != nil {
+		return 0, err
+	}
+	return len(b), nil
 }
 
 // ReadPacket reads a single packet from the UDP connection. This is NOT at all
 // thread safe, and must be used very carefully. The backing buffer is always
 // reused.
 func (s *Session) ReadPacket() (*udp.Packet, error) {
-	return s.udpManager.ReadPacket()
+	p, err := s.udpManager.ReadPacket()
+	if err != nil {
+		return nil, err
+	}
+
+	s.mut.RLock()
+	gateway := s.gateway
+	s.mut.RUnlock()
+
+	dave := gateway.DAVE()
+	user := godave.UserID(gateway.User(p.SSRC()).String())
+
+	s.recvBuf = slices.Grow(s.recvBuf[:0], dave.MaxDecryptedFrameSize(user, len(p.Opus)))
+	n, err := dave.Decrypt(user, p.Opus, s.recvBuf[:cap(s.recvBuf)])
+	if err != nil {
+		return nil, fmt.Errorf("%w end to end for SSRC %d: %w", udp.ErrDecryptionFailed, p.SSRC(), err)
+	}
+	p.Opus = s.recvBuf[:n]
+	return p, nil
+}
+
+// Latency returns how long the voice server took to answer the last ping that
+// ReadPacket read the answer to, or 0 if it has read none.
+func (s *Session) Latency() time.Duration {
+	return s.udpManager.Latency()
+}
+
+// User returns the user that sends the packets with the given SSRC, or 0 if it
+// is not known yet.
+func (s *Session) User(ssrc uint32) discord.UserID {
+	s.mut.RLock()
+	defer s.mut.RUnlock()
+
+	if s.gateway == nil {
+		return 0
+	}
+	return s.gateway.User(ssrc)
 }
 
 // Leave disconnects the current voice session from the currently connected

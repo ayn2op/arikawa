@@ -102,7 +102,23 @@ func (m *Manager) Close() (err error) {
 		ws.WSDebug("UDP manager closed")
 	}
 
+	// Close the connection for whoever is reading it to stop.
+	if m.conn != nil {
+		m.conn.Close()
+	}
+
 	return nil
+}
+
+// Latency returns the latency of the current connection, if any.
+func (m *Manager) Latency() time.Duration {
+	m.stopMu.Lock()
+	defer m.stopMu.Unlock()
+
+	if m.conn == nil {
+		return 0
+	}
+	return m.conn.Latency()
 }
 
 // IsClosed returns true if the connection is closed.

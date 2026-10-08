@@ -12,16 +12,18 @@ package voicegateway
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/ayn2op/arikawa/v3/discord"
 	"github.com/ayn2op/arikawa/v3/utils/ws"
+	"github.com/disgoorg/godave"
 )
 
 // Version represents the current version of the Discord Gateway Gateway this package uses.
-const Version = "4"
+const Version = "9"
 
 var (
 	ErrNoSessionID = errors.New("no sessionID was received")
@@ -46,6 +48,11 @@ type Gateway struct {
 
 	mutex sync.RWMutex
 	ready *ReadyEvent
+	// seq is the sequence number of the last event received.
+	seq int64
+
+	dave  godave.Session
+	ssrcs map[uint32]discord.UserID // guarded by mutex
 }
 
 // DefaultGatewayOpts contains the default options to be used for connecting to
@@ -67,26 +74,65 @@ var DefaultGatewayOpts = ws.GatewayOpts{
 		4012, // unknown protocol
 		4014, // disconnected
 		4016, // unknown encryption mode
+		4017, // E2EE required
+		4021, // rate limited
+		4022, // call terminated
 	},
 	DialTimeout:           0,
 	ReconnectAttempt:      0,
 	AlwaysCloseGracefully: true,
 }
 
-// New creates a new voice gateway.
-func New(state State) *Gateway {
+// New creates a new voice gateway that encrypts end to end using a session
+// from dave, or does not if dave is nil.
+func New(state State, dave godave.SessionCreateFunc) *Gateway {
+	if dave == nil {
+		dave = godave.NewNoopSession
+	}
+
 	// https://discord.com/developers/docs/topics/voice-connections#establishing-a-voice-websocket-connection
 	endpoint := "wss://" + strings.TrimSuffix(state.Endpoint, ":80") + "/?v=" + Version
 
-	gw := ws.NewGateway(
-		ws.NewWebsocket(ws.NewCodec(OpUnmarshalers), endpoint),
-		&DefaultGatewayOpts,
-	)
-
-	return &Gateway{
-		gateway: gw,
+	g := &Gateway{
+		gateway: ws.NewGateway(ws.NewWebsocket(ws.NewCodec(OpUnmarshalers), endpoint), &DefaultGatewayOpts),
 		state:   state,
+		ssrcs:   make(map[uint32]discord.UserID),
 	}
+	g.dave = dave(slog.Default(), godave.UserID(state.UserID.String()), (*daveCallbacks)(g))
+	g.dave.SetChannelID(godave.ChannelID(state.ChannelID))
+	return g
+}
+
+// DAVE returns the session that encrypts end to end.
+func (g *Gateway) DAVE() godave.Session {
+	return g.dave
+}
+
+// User returns the user that sends with the given SSRC, or 0 if it is not known.
+func (g *Gateway) User(ssrc uint32) discord.UserID {
+	g.mutex.RLock()
+	defer g.mutex.RUnlock()
+
+	return g.ssrcs[ssrc]
+}
+
+// daveCallbacks is what the DAVE session sends with.
+type daveCallbacks Gateway
+
+func (g *daveCallbacks) SendMLSKeyPackage(b []byte) error {
+	return g.gateway.Send(context.Background(), new(MLSKeyPackageCommand(b)))
+}
+
+func (g *daveCallbacks) SendMLSCommitWelcome(b []byte) error {
+	return g.gateway.Send(context.Background(), new(MLSCommitWelcomeCommand(b)))
+}
+
+func (g *daveCallbacks) SendReadyForTransition(id uint16) error {
+	return g.gateway.Send(context.Background(), &DAVETransitionReadyCommand{TransitionID: id})
+}
+
+func (g *daveCallbacks) SendInvalidCommitWelcome(id uint16) error {
+	return g.gateway.Send(context.Background(), &MLSInvalidCommitWelcomeCommand{TransitionID: id})
 }
 
 // Ready returns the ready event.
@@ -141,9 +187,18 @@ var (
 
 type gatewayImpl Gateway
 
+// serverID returns the guild ID, or the channel ID for a private channel.
+func (g *gatewayImpl) serverID() discord.GuildID {
+	if g.state.GuildID.IsValid() {
+		return g.state.GuildID
+	}
+	return discord.GuildID(g.state.ChannelID)
+}
+
 func (g *gatewayImpl) sendIdentify(ctx context.Context) error {
 	id := IdentifyCommand{
-		GuildID:   g.state.GuildID,
+		GuildID:   g.serverID(),
+		ChannelID: g.state.ChannelID,
 		UserID:    g.state.UserID,
 		SessionID: g.state.SessionID,
 		Token:     g.state.Token,
@@ -151,23 +206,30 @@ func (g *gatewayImpl) sendIdentify(ctx context.Context) error {
 	if !id.GuildID.IsValid() || id == (IdentifyCommand{}) {
 		return ErrMissingForIdentify
 	}
+	id.MaxDAVEProtocolVersion = g.dave.MaxSupportedProtocolVersion()
 
 	return g.gateway.Send(ctx, &id)
 }
 
 func (g *gatewayImpl) sendResume(ctx context.Context) error {
-	if !g.state.GuildID.IsValid() || g.state.SessionID == "" || g.state.Token == "" {
+	if !g.serverID().IsValid() || g.state.SessionID == "" || g.state.Token == "" {
 		return ErrMissingForResume
 	}
 
 	return g.gateway.Send(ctx, &ResumeCommand{
-		GuildID:   g.state.GuildID,
+		GuildID:   g.serverID(),
+		ChannelID: g.state.ChannelID,
 		SessionID: g.state.SessionID,
 		Token:     g.state.Token,
+		SeqAck:    g.seq,
 	})
 }
 
 func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
+	if op.Sequence != 0 {
+		g.seq = op.Sequence
+	}
+
 	switch data := op.Data.(type) {
 	case *HelloEvent:
 		g.gateway.ResetHeartbeat(data.HeartbeatInterval.Duration())
@@ -190,13 +252,41 @@ func (g *gatewayImpl) OnOp(ctx context.Context, op ws.Op) bool {
 		g.mutex.Lock()
 		g.ready = data
 		g.mutex.Unlock()
+		g.dave.AssignSsrcToCodec(data.SSRC, godave.CodecOpus)
+	case *SpeakingEvent:
+		g.mutex.Lock()
+		g.ssrcs[data.SSRC] = data.UserID
+		g.mutex.Unlock()
+
+	case *SessionDescriptionEvent:
+		g.dave.OnSelectProtocolAck(data.DAVEProtocolVersion)
+	case *ClientsConnectEvent:
+		for _, id := range data.UserIDs {
+			g.dave.AddUser(godave.UserID(id.String()))
+		}
+	case *ClientDisconnectEvent:
+		g.dave.RemoveUser(godave.UserID(data.UserID.String()))
+	case *DAVEPrepareTransitionEvent:
+		g.dave.OnDavePrepareTransition(data.TransitionID, data.ProtocolVersion)
+	case *DAVEExecuteTransitionEvent:
+		g.dave.OnDaveExecuteTransition(data.TransitionID)
+	case *DAVEPrepareEpochEvent:
+		g.dave.OnDavePrepareEpoch(data.Epoch, data.ProtocolVersion)
+	case *MLSExternalSenderEvent:
+		g.dave.OnDaveMLSExternalSenderPackage(*data)
+	case *MLSProposalsEvent:
+		g.dave.OnDaveMLSProposals(*data)
+	case *MLSAnnounceCommitEvent:
+		g.dave.OnDaveMLSPrepareCommitTransition(data.TransitionID, data.Commit)
+	case *MLSWelcomeEvent:
+		g.dave.OnDaveMLSWelcome(data.TransitionID, data.Welcome)
 	}
 
 	return true
 }
 
 func (g *gatewayImpl) SendHeartbeat(ctx context.Context) {
-	heartbeat := HeartbeatCommand(time.Now().UnixNano())
+	heartbeat := HeartbeatCommand{T: time.Now().UnixMilli(), SeqAck: g.seq}
 	if err := g.gateway.Send(ctx, &heartbeat); err != nil {
 		g.gateway.SendErrorWrap(err, "heartbeat error")
 		g.gateway.QueueReconnect()
@@ -204,5 +294,5 @@ func (g *gatewayImpl) SendHeartbeat(ctx context.Context) {
 }
 
 func (g *gatewayImpl) Close() error {
-	return nil
+	return g.dave.Close()
 }

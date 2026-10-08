@@ -117,7 +117,8 @@ type Op struct {
 
 	// Type is only for gateway dispatch events.
 	Type EventType `json:"t,omitempty"`
-	// Sequence is only for gateway dispatch events (Op 0).
+	// Sequence is only for gateway dispatch events (Op 0) and the voice
+	// gateway's events that it can resend on resume.
 	Sequence int64 `json:"s,omitempty"`
 }
 

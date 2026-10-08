@@ -2,6 +2,7 @@ package ws
 
 import (
 	"context"
+	"encoding"
 	"errors"
 	"fmt"
 	"slices"
@@ -161,8 +162,18 @@ func (g *Gateway) Opts() *GatewayOpts {
 	return &cpy
 }
 
-// Send is a function to send an Op payload to the Gateway.
+// Send is a function to send an Op payload to the Gateway. An Event that is an
+// encoding.BinaryMarshaler is sent as a binary message of its Op code and what
+// it marshals to.
 func (g *Gateway) Send(ctx context.Context, data Event) error {
+	if event, ok := data.(encoding.BinaryMarshaler); ok {
+		b, err := event.MarshalBinary()
+		if err != nil {
+			return fmt.Errorf("failed to encode payload: %w", err)
+		}
+		return g.ws.SendBinary(ctx, append([]byte{byte(data.Op())}, b...))
+	}
+
 	op := Op{
 		Code: data.Op(),
 		Type: data.EventType(),

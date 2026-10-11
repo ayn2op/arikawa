@@ -190,25 +190,22 @@ func (s *Session) updateServer(ev *gateway.VoiceServerUpdateEvent) {
 }
 
 // updateState is specifically used after connecting to monitor when the bot is
-// forced across channels.
+// forced across channels or out of them.
 func (s *Session) updateState(ev *gateway.VoiceStateUpdateEvent) {
 	s.acquireUpdate(func() {
 		if s.state.GuildID != ev.GuildID || s.state.UserID != ev.UserID {
 			return
 		}
-		// Anything else that changed, such as being muted, is no reason to
-		// reconnect.
-		if s.state.ChannelID == ev.ChannelID && s.state.SessionID == ev.SessionID {
+		// Disconnected by someone else, or by connecting from another client.
+		if !ev.ChannelID.IsValid() || ev.SessionID != s.state.SessionID {
+			s.ensureClosed()
 			return
 		}
 
+		// Moved to another channel, which a voice server update follows that
+		// reconnects. Anything else that changed, such as being muted, is no
+		// reason to.
 		s.state.ChannelID = ev.ChannelID
-		s.state.SessionID = ev.SessionID
-
-		ctx, cancel := context.WithTimeout(context.Background(), WSTimeout)
-		defer cancel()
-
-		s.reconnectCtx(ctx)
 	})
 }
 

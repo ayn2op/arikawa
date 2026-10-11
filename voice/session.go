@@ -613,12 +613,8 @@ func (s *Session) Leave(ctx context.Context) error {
 		s.detachReconnect = nil
 	}
 
-	// If we're already closed.
-	if s.gateway == nil && s.udpManager.IsClosed() {
-		return nil
-	}
-
-	// Notify Discord that we're leaving.
+	// Notify Discord that we're leaving, even if we never connected: it may
+	// have us in the channel regardless when joining failed.
 	sendErr := s.session.SendGateway(ctx, &gateway.UpdateVoiceStateCommand{
 		GuildID:   s.state.GuildID,
 		ChannelID: discord.ChannelID(discord.NullSnowflake),

@@ -555,6 +555,11 @@ type Attachment struct {
 	// attachments on messages are guaranteed to be available as long as
 	// the message itself exists.
 	Ephemeral bool `json:"ephemeral,omitempty"`
+
+	// DurationSecs is how long the file is, if it is a voice message.
+	DurationSecs float64 `json:"duration_secs,omitempty"`
+	// Waveform is how loud each part of the file is, if it is a voice message.
+	Waveform []byte `json:"waveform,omitempty"`
 }
 
 //

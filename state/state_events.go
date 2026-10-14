@@ -205,6 +205,15 @@ func (s *State) onEvent(iface any) {
 		// not tracked.
 
 	case *gateway.ThreadListSyncEvent:
+		// The event holds every active thread of the channels it names, or of
+		// the guild if it names none, so the others are no longer active.
+		s.removeThreads(ev.GuildID, func(thread discord.Channel) bool {
+			synced := ev.ChannelIDs == nil || slices.Contains(ev.ChannelIDs, thread.ParentID)
+			return synced && !slices.ContainsFunc(ev.Threads, func(t discord.Channel) bool {
+				return t.ID == thread.ID
+			})
+		})
+
 		for i := range ev.Threads {
 			if err := s.Cabinet.ChannelSet(&ev.Threads[i], true); err != nil {
 				s.stateErr(err, "failed to set a thread in state sync")
@@ -385,6 +394,20 @@ func (s *State) cachedUser(id discord.UserID) discord.User {
 		return *user
 	}
 	return discord.User{ID: id}
+}
+
+// removeThreads removes the threads of the guild that remove reports true for.
+func (s *State) removeThreads(guildID discord.GuildID, remove func(thread discord.Channel) bool) {
+	channels, _ := s.Cabinet.Channels(guildID)
+	for i := range channels {
+		if !channels[i].Type.IsThread() || !remove(channels[i]) {
+			continue
+		}
+
+		if err := s.Cabinet.ChannelRemove(&channels[i]); err != nil {
+			s.stateErr(err, "failed to remove a thread in state")
+		}
+	}
 }
 
 func (s *State) stateErr(err error, wrap string) {

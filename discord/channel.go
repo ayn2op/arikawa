@@ -105,7 +105,7 @@ type Channel struct {
 	// channels.
 	ThreadMetadata *ThreadMetadata `json:"thread_metadata,omitempty"`
 	// ThreadMember is the thread member object for the current user, if they
-	// have joined the thread, only included on certain API endpoints.
+	// have joined the thread. The state keeps it on the threads it holds.
 	ThreadMember *ThreadMember `json:"member,omitempty"`
 	// DefaultAutoArchiveDuration is the default duration for newly created
 	// threads, in minutes, to automatically archive the thread after recent

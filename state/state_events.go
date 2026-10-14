@@ -219,8 +219,15 @@ func (s *State) onEvent(iface any) {
 			})
 		})
 
-		for i := range ev.Threads {
-			if err := s.Cabinet.ChannelSet(&ev.Threads[i], true); err != nil {
+		for _, thread := range ev.Threads {
+			// The event holds the current user's member of each thread in it
+			// that they have joined, apart from the threads.
+			thread.ThreadMember = nil
+			if i := slices.IndexFunc(ev.Members, func(m discord.ThreadMember) bool { return m.ID == thread.ID }); i >= 0 {
+				thread.ThreadMember = &ev.Members[i]
+			}
+
+			if err := s.Cabinet.ChannelSet(&thread, true); err != nil {
 				s.stateErr(err, "failed to set a thread in state sync")
 			}
 		}
@@ -240,8 +247,29 @@ func (s *State) onEvent(iface any) {
 			break
 		}
 
-		if err := s.Cabinet.ChannelSet(&ev.Channel, true); err != nil {
+		// The update does not hold the current user's member of the thread.
+		thread := ev.Channel
+		if old, err := s.Cabinet.Channel(thread.ID); err == nil {
+			thread.ThreadMember = old.ThreadMember
+		}
+
+		if err := s.Cabinet.ChannelSet(&thread, true); err != nil {
 			s.stateErr(err, "failed to update a thread in state")
+		}
+
+	case *gateway.ThreadMemberUpdateEvent:
+		s.setThreadMember(ev.ID, &ev.ThreadMember)
+
+	case *gateway.ThreadMembersUpdateEvent:
+		me, err := s.Cabinet.Me()
+		if err != nil {
+			break
+		}
+
+		if i := slices.IndexFunc(ev.AddedMembers, func(m discord.ThreadMember) bool { return m.UserID == me.ID }); i >= 0 {
+			s.setThreadMember(ev.ID, &ev.AddedMembers[i])
+		} else if slices.Contains(ev.RemovedMemberIDs, me.ID) {
+			s.setThreadMember(ev.ID, nil)
 		}
 
 	case *gateway.ThreadDeleteEvent:
@@ -408,6 +436,20 @@ func (s *State) cachedUser(id discord.UserID) discord.User {
 		return *user
 	}
 	return discord.User{ID: id}
+}
+
+// setThreadMember sets the current user's member of the thread, or nil once
+// they left it.
+func (s *State) setThreadMember(threadID discord.ChannelID, member *discord.ThreadMember) {
+	thread, err := s.Cabinet.Channel(threadID)
+	if err != nil {
+		return
+	}
+
+	thread.ThreadMember = member
+	if err := s.Cabinet.ChannelSet(thread, true); err != nil {
+		s.stateErr(err, "failed to set the thread member in state")
+	}
 }
 
 // removeThreads removes the threads of the guild that remove reports true for.

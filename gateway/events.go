@@ -203,6 +203,9 @@ type ChannelUnreadUpdateEvent struct {
 // relevant to the current user, or when the current user is added to a thread.
 type ThreadCreateEvent struct {
 	discord.Channel
+	// NewlyCreated is whether the thread was just created, as opposed to the
+	// current user being added to it.
+	NewlyCreated bool `json:"newly_created,omitempty"`
 }
 
 // ThreadUpdateEvent is a dispatch event. It is sent when a thread is updated.

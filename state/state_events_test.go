@@ -65,6 +65,10 @@ func TestStateOnEvent(t *testing.T) {
 			&gateway.ThreadListSyncEvent{GuildID: 1, Threads: []discord.Channel{thread(21, 20, false)}},
 			[]discord.ChannelID{21},
 		},
+		"a deleted channel takes its threads with it": {
+			&gateway.ChannelDeleteEvent{Channel: discord.Channel{ID: 10, GuildID: 1}},
+			[]discord.ChannelID{21},
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			if got := threads(t, tt.event); !slices.Equal(got, tt.want) {

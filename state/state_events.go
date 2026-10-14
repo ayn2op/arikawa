@@ -201,6 +201,11 @@ func (s *State) onEvent(iface any) {
 			s.stateErr(err, "failed to remove a channel in state")
 		}
 
+		// The threads of a channel are deleted with it.
+		s.removeThreads(ev.GuildID, func(thread discord.Channel) bool {
+			return thread.ParentID == ev.ID
+		})
+
 	case *gateway.ChannelPinsUpdateEvent:
 		// not tracked.
 

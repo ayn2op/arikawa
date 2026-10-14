@@ -76,3 +76,32 @@ func TestPermissionsFetchesMissingDataOnce(t *testing.T) {
 		}
 	}
 }
+
+func TestStatePermissions(t *testing.T) {
+	t.Run("a thread takes the overwrites of its channel", func(t *testing.T) {
+		driver := &permissionDriver{requests: map[string]int{}, roles: make(chan struct{})}
+		client := api.NewCustomClient("token", httputil.NewClientWithDriver(driver))
+		session := session.NewCustom(gateway.DefaultIdentifier("token"), client, handler.New())
+		cabinet := defaultstore.New()
+
+		// Everyone may view the guild's channels, but not channel 10.
+		overwrite := discord.Overwrite{ID: 1, Type: discord.OverwriteRole, Deny: discord.PermissionViewChannel}
+		for _, channel := range []discord.Channel{
+			{ID: 10, GuildID: 1, Overwrites: []discord.Overwrite{overwrite}},
+			{ID: 11, GuildID: 1, ParentID: 10, Type: discord.GuildPublicThread},
+		} {
+			if err := cabinet.ChannelSet(&channel, false); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		perms, err := NewFromSession(session, cabinet).Permissions(11, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if perms.Has(discord.PermissionViewChannel) {
+			t.Fatalf("permissions = %v, want the thread not viewable", perms)
+		}
+	})
+}

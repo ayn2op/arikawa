@@ -336,6 +336,15 @@ func (s *State) Permissions(
 		return 0, errors.New("channel is not in a guild")
 	}
 
+	// A thread has no overwrites of its own: those of the channel it is in
+	// apply to it.
+	if ch.Type.IsThread() {
+		ch, err = s.Channel(ch.ParentID)
+		if err != nil {
+			return 0, fmt.Errorf("failed to get the channel of the thread: %w", err)
+		}
+	}
+
 	var wg sync.WaitGroup
 
 	var (

@@ -249,6 +249,11 @@ const (
 	GuildForum
 )
 
+// IsThread reports whether t is one of the thread types.
+func (t ChannelType) IsThread() bool {
+	return t == GuildAnnouncementThread || t == GuildPublicThread || t == GuildPrivateThread
+}
+
 // https://discord.com/developers/docs/resources/channel#overwrite-object
 type Overwrite struct {
 	// ID is the role or user id.

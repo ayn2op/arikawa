@@ -350,11 +350,28 @@ type ThreadMember struct {
 	JoinTimestamp Timestamp `json:"join_timestamp"`
 	// Flags are any user-thread settings.
 	Flags ThreadMemberFlags `json:"flags"`
+	// Muted is whether the user has muted the thread. It is omitted for
+	// thread members other than the current user.
+	Muted bool `json:"muted,omitempty"`
 }
 
 // ThreadMemberFlags are the flags of a ThreadMember.
-// Currently, none are documented.
 type ThreadMemberFlags uint64
+
+const (
+	// ThreadMemberHasInteracted is set when the user has interacted with the
+	// thread.
+	ThreadMemberHasInteracted ThreadMemberFlags = 1 << iota
+	// ThreadMemberAllMessages is set when the user receives notifications for
+	// all messages.
+	ThreadMemberAllMessages
+	// ThreadMemberOnlyMentions is set when the user receives notifications
+	// only for messages that mention them.
+	ThreadMemberOnlyMentions
+	// ThreadMemberNoMessages is set when the user does not receive any
+	// notifications.
+	ThreadMemberNoMessages
+)
 
 // Tag represents a tag that is able to be applied to a thread in a GuildForum
 // channel.

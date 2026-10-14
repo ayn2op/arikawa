@@ -69,6 +69,14 @@ func TestStateOnEvent(t *testing.T) {
 			&gateway.ChannelDeleteEvent{Channel: discord.Channel{ID: 10, GuildID: 1}},
 			[]discord.ChannelID{21},
 		},
+		"an archived thread is dropped": {
+			&gateway.ThreadUpdateEvent{Channel: thread(11, 10, true)},
+			[]discord.ChannelID{12, 21},
+		},
+		"an updated thread is kept": {
+			&gateway.ThreadUpdateEvent{Channel: thread(11, 10, false)},
+			[]discord.ChannelID{11, 12, 21},
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			if got := threads(t, tt.event); !slices.Equal(got, tt.want) {

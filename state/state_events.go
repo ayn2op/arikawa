@@ -231,6 +231,15 @@ func (s *State) onEvent(iface any) {
 		}
 
 	case *gateway.ThreadUpdateEvent:
+		// Only active threads are kept.
+		if ev.ThreadMetadata != nil && ev.ThreadMetadata.Archived {
+			if err := s.Cabinet.ChannelRemove(&ev.Channel); err != nil {
+				s.stateErr(err, "failed to remove an archived thread in state")
+			}
+
+			break
+		}
+
 		if err := s.Cabinet.ChannelSet(&ev.Channel, true); err != nil {
 			s.stateErr(err, "failed to update a thread in state")
 		}

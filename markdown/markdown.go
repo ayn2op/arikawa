@@ -5,41 +5,29 @@ import (
 
 	"github.com/ayn2op/arikawa/v3/discord"
 	"github.com/ayn2op/arikawa/v3/state/store"
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/parser"
 )
 
 var (
 	messageCtx = parser.NewContextKey()
 	sessionCtx = parser.NewContextKey()
-	parserPool = sync.Pool{
-		New: func() any { return newPooledParser() },
-	}
+	emojiCtx   = parser.NewContextKey()
+
+	// markdownParser is safe for concurrent use, since each parse keeps its state in its own context.
+	markdownParser = sync.OnceValue(func() parser.Parser {
+		return parser.New(
+			// Discord supports only some of CommonMark, so its parsers replace the default ones.
+			parser.WithDefaultParsers(false),
+			parser.WithBlockParsers(blockParsers()...),
+			parser.WithInlineParsers(inlineParsers(&emoji{})...),
+			parser.WithExtensions(linkify),
+		)
+	})
 )
 
-type pooledParser struct {
-	parser.Parser
-	emoji *emoji
-}
-
-func newPooledParser() *pooledParser {
-	emojiParser := &emoji{}
-	return &pooledParser{
-		Parser: parser.NewParser(
-			parser.WithBlockParsers(blockParsers()...),
-			parser.WithInlineParsers(inlineParsers(emojiParser)...),
-		),
-		emoji: emojiParser,
-	}
-}
-
 func parse(content []byte, opts ...parser.ParseOption) ast.Node {
-	p := parserPool.Get().(*pooledParser)
-	*p.emoji = emoji{}
-	root := p.Parse(text.NewReader(content), opts...)
-	parserPool.Put(p)
-	return root
+	return markdownParser().Parse(content, opts...)
 }
 
 // ParseWithMessage parses the given byte slice with the Discord state and the

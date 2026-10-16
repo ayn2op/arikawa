@@ -1,14 +1,12 @@
 package markdown
 
 import (
-	"io"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/ayn2op/arikawa/v3/discord"
 	"github.com/ayn2op/arikawa/v3/state/store"
-	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/v2/ast"
 )
 
 var parseSink ast.Node
@@ -46,7 +44,7 @@ func TestParseLink(t *testing.T) {
 			var destination string
 			_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 				if link, ok := node.(*ast.Link); ok && entering {
-					destination = string(link.Destination)
+					destination = string(link.Destination.Bytes(content))
 				}
 				return ast.WalkContinue, nil
 			})
@@ -103,29 +101,7 @@ func BenchmarkParse(b *testing.B) {
 }
 
 func dump(n ast.Node, src []byte) string {
-	// goldmark is a dogshit library with a god awful API.
-	// To work around this joke, we will just hijack os.Stdout and os.Stderr to
-	// get the output of the Dump function.
-	oldStdout := os.Stdout
-	oldStderr := os.Stderr
-	defer func() {
-		os.Stdout = oldStdout
-		os.Stderr = oldStderr
-	}()
-
-	r, w, _ := os.Pipe()
-
-	os.Stdout = w
-	os.Stderr = w
-
-	go func() {
-		n.Dump(src, 0)
-		w.Close()
-	}()
-
 	var buf strings.Builder
-	io.Copy(&buf, r)
-	r.Close()
-
+	_ = n.Dump(src).PrettyPrint(&buf, src)
 	return buf.String()
 }

@@ -1,34 +1,29 @@
 package markdown
 
 import (
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
-	"github.com/yuin/goldmark/util"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/text"
+	"github.com/yuin/goldmark/v2/util"
 )
 
-// Heading is a Discord-specific heading.
-type Heading = ast.Heading
-
-func blockParsers() []util.PrioritizedValue {
-	return []util.PrioritizedValue{
-		util.Prioritized(defaultFencedCodeBlockParser, 10),
-		util.Prioritized(parser.NewATXHeadingParser(), 100),
+func blockParsers() []util.PrioritizedValue[parser.BlockParser] {
+	return []util.PrioritizedValue[parser.BlockParser]{
+		util.Prioritized[parser.BlockParser](defaultFencedCodeBlockParser, 10),
+		util.Prioritized(newHeadingParser(), 100),
 		util.Prioritized(newListParser(), 300),
-		util.Prioritized(newListItemParser(), 400),
-		util.Prioritized(blockquote{}, 500),
-		util.Prioritized(paragraph{}, 1000),
+		util.Prioritized(parser.NewListItemParser(), 400),
+		util.Prioritized[parser.BlockParser](blockquote{}, 500),
+		util.Prioritized[parser.BlockParser](paragraph{}, 1000),
 	}
 }
 
-func inlineParsers(emojiParser *emoji) []util.PrioritizedValue {
-	return []util.PrioritizedValue{
-		util.Prioritized(emojiParser, 200),
-		util.Prioritized(inlineCodeSpan{}, 300),
-		// util.Prioritized(parser.NewCodeSpanParser(), 300),
-		util.Prioritized(inline{}, 350),
-		util.Prioritized(mention{}, 400),
-		util.Prioritized(autolink{}, 500),
+func inlineParsers(emojiParser *emoji) []util.PrioritizedValue[parser.InlineParser] {
+	return []util.PrioritizedValue[parser.InlineParser]{
+		util.Prioritized[parser.InlineParser](emojiParser, 200),
+		util.Prioritized[parser.InlineParser](inlineCodeSpan{}, 300),
+		util.Prioritized[parser.InlineParser](inline{}, 350),
+		util.Prioritized[parser.InlineParser](mention{}, 400),
+		util.Prioritized[parser.InlineParser](autolink{}, 500),
 		util.Prioritized(parser.NewLinkParser(), 600),
 	}
 }

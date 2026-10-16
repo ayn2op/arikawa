@@ -1,10 +1,10 @@
 package markdown
 
 import (
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
-	"github.com/yuin/goldmark/util"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/text"
+	"github.com/yuin/goldmark/v2/util"
 )
 
 type blockquote struct{}
@@ -43,7 +43,7 @@ func (b blockquote) Open(p ast.Node, r text.Reader, pc parser.Context) (ast.Node
 		para := newSingleParagraph(node, r, pc)
 
 		// Add and return the paragraph anyway, maybe the first line is just empty.
-		node.AppendChild(node, para)
+		node.AppendChild(para)
 		return node, parser.NoChildren
 	}
 
@@ -53,7 +53,7 @@ func (b blockquote) Open(p ast.Node, r text.Reader, pc parser.Context) (ast.Node
 func (b blockquote) Continue(node ast.Node, r text.Reader, pc parser.Context) parser.State {
 	if b.process(r) {
 		para := newSingleParagraph(node, r, pc)
-		node.AppendChild(node, para)
+		node.AppendChild(para)
 		return parser.Continue
 	}
 
@@ -82,16 +82,9 @@ func (b blockquote) Close(node ast.Node, r text.Reader, pc parser.Context) {
 	}
 
 	// Remove it if the paragraph is empty.
-	lines := para.Lines()
-	length := lines.Len()
-
-	// Remove.
-	if length == 0 {
-		node.RemoveChild(node, para)
-		return
-	}
-	if line := lines.At(0); line.Len() == 0 {
-		node.RemoveChild(node, para)
+	lines := para.Source()
+	if len(lines) == 0 || lines[0].Len() == 0 {
+		node.RemoveChild(para)
 	}
 }
 

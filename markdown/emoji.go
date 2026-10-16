@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"regexp"
 
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/text"
 )
 
 const (
@@ -42,15 +42,23 @@ func (e *Emoji) Kind() ast.NodeKind {
 }
 
 // Dump implements Node.Dump
-func (e *Emoji) Dump(source []byte, level int) {
-	ast.DumpHelper(e, source, level, nil, nil)
+func (e *Emoji) Dump(source []byte) *ast.NodeDump {
+	return ast.NewNodeDump(e, map[string]any{
+		"ID":    e.ID,
+		"Name":  e.Name,
+		"GIF":   e.GIF,
+		"Large": e.Large,
+	})
 }
 
 func (e Emoji) EmojiURL() string {
 	return EmojiURL(e.ID, e.GIF)
 }
 
-type emoji struct {
+type emoji struct{}
+
+// emojiSize is whether the emojis of a parse are large, kept in its context.
+type emojiSize struct {
 	searched bool // if a small/large check was done
 	large    bool
 }
@@ -62,7 +70,9 @@ func (emoji) Trigger() []byte {
 	return []byte{'<'}
 }
 
-func (state *emoji) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
+func (*emoji) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
+	state := pc.ComputeIfAbsent(emojiCtx, func() any { return &emojiSize{} }).(*emojiSize)
+
 	match := matchInline(block, '<', '>')
 	if match == nil {
 		return nil
@@ -74,13 +84,12 @@ func (state *emoji) Parse(parent ast.Node, block text.Reader, pc parser.Context)
 	}
 
 	var emoji = &Emoji{
-		BaseInline: ast.BaseInline{},
-
 		GIF:   string(matches[1]) == "a",
 		Name:  string(matches[2]),
 		ID:    string(matches[3]),
 		Large: state.large,
 	}
+	emoji.Init(emoji)
 
 	// Check if emojis should be small:
 	if !state.searched {

@@ -3,62 +3,40 @@ package markdown
 import (
 	"regexp"
 
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/extension"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/text"
 )
 
-// ^ because we already parsed to the start of the URL.
+// neverRegexp matches nothing.
+var neverRegexp = regexp.MustCompile(`\A\z.`)
+
+// linkify links bare http and https URLs, as Discord does, but not www. hosts or emails.
+var linkify = extension.NewLinkifyParser(
+	extension.WithAllowedProtocols([]string{"http:", "https:"}),
+	extension.WithWWWRegexp(neverRegexp),
+	extension.WithEmailRegexp(neverRegexp),
+)
+
 var autolinkRegex = regexp.MustCompile(`^https?:\/\S+(?:\.|:)[^>\s]+`)
 
+// autolink parses <https://...>, which Discord links without an embed.
 type autolink struct{}
 
-func (s autolink) Trigger() []byte {
-	return []byte{' ', '<'}
+func (autolink) Trigger() []byte {
+	return []byte{'<'}
 }
 
-func (s autolink) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
+func (autolink) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
 	line, segment := block.PeekLine()
-
-	before := line[0]
-
-	switch before {
-	case '<':
-		// If there's an opener, consume it:
-		line = line[1:]
-		segment.Start++
-
-		// We defer once now for the opener and once after segmenting for the
-		// closure.
-		block.Advance(1)
-		defer block.Advance(1)
-
-	case ' ':
-		// Consume a space so FindURLIndex doesn't break:
-		line = line[1:]
-		block.Advance(1)
-	}
-
-	locs := autolinkRegex.FindIndex(line)
-	if len(locs) == 0 {
+	m := autolinkRegex.FindIndex(line[1:])
+	if m == nil || 1+m[1] >= len(line) || line[1+m[1]] != '>' {
 		return nil
 	}
 
-	stop := locs[1]
-
-	// If we've consumed a space, we should restore the space before the
-	// URL as well.
-	if before == ' ' {
-		// Space? Fine, I'll do it myself. Prepend a space:
-		s := segment.WithStop(segment.Start + 1)
-		ast.MergeOrAppendTextSegment(parent, s)
-
-		// Consume a space in segment so NewTextSegment works properly:
-		segment.Start++
-	}
-
-	value := ast.NewTextSegment(text.NewSegment(segment.Start, segment.Start+stop))
-	block.Advance(stop)
-
-	return ast.NewAutoLink(ast.AutoLinkURL, value)
+	// The URL is kept as written, without decoding escapes or entities.
+	url := text.NewSingleLineValueFromSegment(text.NewSegment(segment.Start+1, segment.Start+1+m[1]), text.IdentityDecoder)
+	block.Advance(m[1] + 2)
+	return ast.NewAutoLink(url, url, ast.WithAutoLinkText(url))
 }

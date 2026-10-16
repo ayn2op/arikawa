@@ -3,10 +3,10 @@ package markdown
 import (
 	"bytes"
 
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
-	"github.com/yuin/goldmark/util"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/text"
+	"github.com/yuin/goldmark/v2/util"
 )
 
 type fencedCodeBlockParser struct {
@@ -44,7 +44,7 @@ func (b *fencedCodeBlockParser) Open(parent ast.Node, reader text.Reader, pc par
 	if oFenceLength < 3 {
 		return nil, parser.NoChildren
 	}
-	var info *ast.Text
+	var info text.SingleLineValue
 	if i < len(line)-1 {
 		rest := line[i:]
 		left := util.TrimLeftSpaceLength(rest)
@@ -55,11 +55,11 @@ func (b *fencedCodeBlockParser) Open(parent ast.Node, reader text.Reader, pc par
 			if fenceChar == '`' && bytes.IndexByte(value, '`') > -1 {
 				return nil, parser.NoChildren
 			} else if infoStart != infoStop {
-				info = ast.NewTextSegment(text.NewSegment(infoStart, infoStop))
+				info = text.NewSingleLineValueFromIndex(text.NewIndex(infoStart, infoStop), reader.Decoder())
 			}
 		}
 	}
-	node := ast.NewFencedCodeBlock(info)
+	node := ast.NewCodeBlock(ast.CodeBlockKindFenced, text.Lines{}, ast.WithCodeBlockInfo(info))
 	pc.Set(fencedCodeBlockInfoKey, &fenceData{fenceChar, findent, oFenceLength, node})
 	return node, parser.Continue | parser.NoChildren
 }
@@ -93,7 +93,7 @@ func (b *fencedCodeBlockParser) Continue(node ast.Node, reader text.Reader, pc p
 	if padding != 0 {
 		preserveLeadingTabInCodeBlock(&seg, reader, fdata.indent)
 	}
-	node.Lines().Append(seg)
+	node.(*ast.CodeBlock).Value.AppendSegment(seg)
 	reader.AdvanceAndSetPadding(segment.Stop-segment.Start-pos-1, padding)
 	return parser.Continue | parser.NoChildren
 }

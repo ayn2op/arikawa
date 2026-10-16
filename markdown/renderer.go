@@ -5,9 +5,10 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/renderer"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/renderer/html"
 	"go4.org/bytereplacer"
 )
 
@@ -36,9 +37,7 @@ func UnescapeWriter(w io.Writer) io.Writer {
 // Blockquote.
 type BasicRenderer struct{}
 
-var DefaultRenderer renderer.Renderer = &BasicRenderer{}
-
-func (r *BasicRenderer) AddOptions(...renderer.Option) {}
+var DefaultRenderer = &BasicRenderer{}
 
 func (r *BasicRenderer) Render(w io.Writer, source []byte, n ast.Node) error {
 	// Wrap the current writer behind an unescaper.
@@ -62,7 +61,7 @@ func (r *basicRenderWalker) walk(w io.Writer, source []byte, n ast.Node, enter b
 	case *ast.Blockquote:
 		if enter {
 			// A blockquote contains a paragraph each line. Because Discord.
-			for child := n.FirstChild(); child != nil; child = child.NextSibling() {
+			for child := range n.Children() {
 				io.WriteString(w, "> ")
 				ast.Walk(child, func(node ast.Node, enter bool) (ast.WalkStatus, error) {
 					// We only call when entering, since we don't want to trigger a
@@ -78,26 +77,30 @@ func (r *basicRenderWalker) walk(w io.Writer, source []byte, n ast.Node, enter b
 		return ast.WalkSkipChildren
 
 	case *ast.Paragraph:
-		if !enter {
+		// A paragraph of a tight list item ends with the item.
+		if !enter && !html.IsInTightBlock(n) {
 			io.WriteString(w, "\n")
 		}
-	case *ast.FencedCodeBlock:
+	case *ast.CodeBlock:
 		io.WriteString(w, "\n")
 		if enter {
 			// Write the body
-			for i := 0; i < n.Lines().Len(); i++ {
-				line := n.Lines().At(i)
+			for _, line := range n.Value.Segments() {
 				io.WriteString(w, "| ")
-				w.Write(line.Value(source))
+				w.Write(line.Bytes(source))
 			}
 		}
 	case *ast.Link:
-		if enter {
-			io.WriteString(w, string(n.Title)+" ("+string(n.Destination)+")")
+		// The label is written by the children, so the title and destination follow it.
+		if !enter {
+			if !n.Title.IsEmpty() {
+				io.WriteString(w, " "+string(n.Title.Bytes(source)))
+			}
+			io.WriteString(w, " ("+string(n.Destination.Bytes(source))+")")
 		}
 	case *ast.AutoLink:
 		if enter {
-			w.Write(n.URL(source))
+			w.Write(n.Destination.Bytes(source))
 		}
 	case *Inline:
 		// n.Attr should be used, but since we're in plaintext mode, there
@@ -105,9 +108,11 @@ func (r *basicRenderWalker) walk(w io.Writer, source []byte, n ast.Node, enter b
 		if n.Attr&AttrSpoiler != 0 {
 			if enter {
 				w := spoilerWriter{w}
-				walkChildren(n, func(node ast.Node, enter bool) (ast.WalkStatus, error) {
-					return r.walk(w, source, node, enter), nil
-				})
+				for child := range n.Children() {
+					ast.Walk(child, func(node ast.Node, enter bool) (ast.WalkStatus, error) {
+						return r.walk(w, source, node, enter), nil
+					})
+				}
 			}
 			return ast.WalkSkipChildren
 		}
@@ -134,12 +139,12 @@ func (r *basicRenderWalker) walk(w io.Writer, source []byte, n ast.Node, enter b
 		} else {
 			io.WriteString(w, indent)
 
-			line := n.Lines().At(0)
+			line := n.Source()[0]
 			sep := "="
 			if n.Level > 1 {
 				sep = "-"
 			}
-			io.WriteString(w, strings.Repeat(sep, len(line.Value(source))))
+			io.WriteString(w, strings.Repeat(sep, utf8.RuneCount(line.Bytes(source))))
 			io.WriteString(w, "\n")
 		}
 	case *ast.List:
@@ -167,13 +172,9 @@ func (r *basicRenderWalker) walk(w io.Writer, source []byte, n ast.Node, enter b
 		} else {
 			io.WriteString(w, "\n")
 		}
-	case *ast.String:
-		if enter {
-			w.Write(n.Value)
-		}
 	case *ast.Text:
 		if enter {
-			w.Write(n.Segment.Value(source))
+			w.Write(n.Value.Bytes(source))
 			switch {
 			case n.HardLineBreak():
 				io.WriteString(w, "\n\n")
@@ -183,15 +184,6 @@ func (r *basicRenderWalker) walk(w io.Writer, source []byte, n ast.Node, enter b
 		}
 	}
 	return ast.WalkContinue
-}
-
-func walkChildren(n ast.Node, walker ast.Walker) error {
-	for child := n.FirstChild(); child != nil; child = child.NextSibling() {
-		if err := ast.Walk(child, walker); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // spoilerWriter is a writer that replaces all printable characters with a

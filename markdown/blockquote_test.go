@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/util"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/renderer/html"
+	"github.com/yuin/goldmark/v2/util"
 )
 
 const _blockquote = `lol message
@@ -36,27 +36,23 @@ asdsad</p>
 
 func TestBlockquote(t *testing.T) {
 	// Make a fenced only parser:
-	p := parser.NewParser(
+	p := parser.New(
+		parser.WithDefaultParsers(false),
 		parser.WithBlockParsers(
-			util.Prioritized(blockquote{}, 700),
+			util.Prioritized[parser.BlockParser](blockquote{}, 700),
 			util.Prioritized(parser.NewParagraphParser(), 500),
 		),
 		parser.WithInlineParsers(
 			util.Prioritized(parser.NewEmphasisParser(), 200),
 		),
-		// parser.WithBlockParsers(util.Prioritized(blockquote{}, 700)),
-	)
-
-	// Make a default new markdown renderer:
-	md := goldmark.New(
-		goldmark.WithParser(p),
 	)
 
 	// Results
 	var buf bytes.Buffer
 
 	// Test inline:
-	if err := md.Convert([]byte(_blockquote), &buf); err != nil {
+	source := []byte(_blockquote)
+	if err := html.New().Render(&buf, source, p.Parse(source)); err != nil {
 		t.Fatal("Failed to parse fenced inline:", err)
 	}
 

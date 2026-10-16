@@ -1,9 +1,9 @@
 package markdown
 
 import (
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/text"
 )
 
 type paragraph struct{}
@@ -17,7 +17,7 @@ func (b paragraph) Trigger() []byte {
 func (b paragraph) Open(p ast.Node, r text.Reader, pc parser.Context) (ast.Node, parser.State) {
 	_, segment := r.PeekLine()
 	node := ast.NewParagraph()
-	node.Lines().Append(segment)
+	node.AppendSource(segment)
 	r.Advance(segment.Len() - 1)
 	return node, parser.NoChildren
 }
@@ -33,7 +33,7 @@ func (b paragraph) Continue(node ast.Node, r text.Reader, pc parser.Context) par
 		}
 	}
 
-	node.Lines().Append(segment)
+	node.(*ast.Paragraph).AppendSource(segment)
 	r.Advance(segment.Len() - 1)
 
 	return parser.Continue | parser.NoChildren
@@ -46,17 +46,12 @@ func (b paragraph) Close(node ast.Node, r text.Reader, pc parser.Context) {
 		return
 	}
 
-	lines := node.Lines()
-	if lines.Len() != 0 {
-		length := lines.Len()
-		lastLine := node.Lines().At(length - 1)
-		node.Lines().Set(length-1, lastLine.TrimRightSpace(r.Source()))
-	}
-
-	if lines.Len() == 0 {
-		node.Parent().RemoveChild(node.Parent(), node)
+	lines := node.(*ast.Paragraph).Source()
+	if len(lines) == 0 {
+		p.RemoveChild(node)
 		return
 	}
+	lines[len(lines)-1] = lines[len(lines)-1].TrimRightSpace(r.Source())
 }
 
 func (b paragraph) CanInterruptParagraph() bool {

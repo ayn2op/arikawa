@@ -6,9 +6,9 @@ import (
 
 	"github.com/ayn2op/arikawa/v3/discord"
 	"github.com/ayn2op/arikawa/v3/state/store"
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/text"
 )
 
 type Mention struct {
@@ -30,8 +30,13 @@ func (m *Mention) Kind() ast.NodeKind {
 }
 
 // Dump implements Node.Dump
-func (m *Mention) Dump(source []byte, level int) {
-	ast.DumpHelper(m, source, level, nil, nil)
+func (m *Mention) Dump(source []byte) *ast.NodeDump {
+	return ast.NewNodeDump(m, map[string]any{"Mentioned": m.Mentioned})
+}
+
+func newMention(m *Mention) *Mention {
+	m.Init(m)
+	return m
 }
 
 type mention struct{}
@@ -85,12 +90,11 @@ func (mention) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.
 			}
 		}
 
-		return &Mention{
-			BaseInline: ast.BaseInline{},
-			Message:    msg,
-			Mentioned:  mentioned,
-			Channel:    c,
-		}
+		return newMention(&Mention{
+			Message:   msg,
+			Mentioned: mentioned,
+			Channel:   c,
+		})
 
 	case "@", "@!": // user/member
 		d := discord.UserID(d)
@@ -114,12 +118,11 @@ func (mention) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.
 			target.Member, _ = cab.Member(msg.GuildID, d)
 		}
 
-		return &Mention{
-			BaseInline: ast.BaseInline{},
-			Message:    msg,
-			Mentioned:  mentioned,
-			GuildUser:  target,
-		}
+		return newMention(&Mention{
+			Message:   msg,
+			Mentioned: mentioned,
+			GuildUser: target,
+		})
 
 	case "@&": // role
 		d := discord.RoleID(d)
@@ -137,12 +140,11 @@ func (mention) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.
 			}
 		}
 
-		return &Mention{
-			BaseInline: ast.BaseInline{},
-			Message:    msg,
-			Mentioned:  mentioned,
-			GuildRole:  r,
-		}
+		return newMention(&Mention{
+			Message:   msg,
+			Mentioned: mentioned,
+			GuildRole: r,
+		})
 	}
 
 	return nil

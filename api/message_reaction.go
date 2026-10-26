@@ -7,7 +7,8 @@ import (
 
 const MaxMessageReactionFetchLimit = 100
 
-// React creates a reaction for the message.
+// React creates a normal reaction for the message, as opposed to a burst
+// (super) one.
 //
 // This endpoint requires the READ_MESSAGE_HISTORY permission to be present on
 // the current user. Additionally, if nobody else has reacted to the message
@@ -16,11 +17,12 @@ const MaxMessageReactionFetchLimit = 100
 func (c *Client) React(
 	channelID discord.ChannelID, messageID discord.MessageID, emoji discord.APIEmoji) error {
 
+	// The type is that of the reaction: 0 for normal, 1 for burst.
 	return c.FastRequest(
 		"PUT",
 		EndpointChannels+channelID.String()+
 			"/messages/"+messageID.String()+
-			"/reactions/"+emoji.PathString()+"/@me",
+			"/reactions/"+emoji.PathString()+"/@me?type=0",
 	)
 }
 

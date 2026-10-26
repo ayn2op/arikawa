@@ -102,9 +102,9 @@ func NewAPIEmoji(id EmojiID, name string) APIEmoji {
 	return APIEmoji(name + ":" + id.String())
 }
 
-// PathString returns the APIEmoji as a path-encoded string.
+// PathString returns the APIEmoji percent-encoded.
 func (e APIEmoji) PathString() string {
-	return url.PathEscape(string(e))
+	return strings.ReplaceAll(url.PathEscape(string(e)), ":", "%3A")
 }
 
 // APIString returns a string usable for sending over to the API.

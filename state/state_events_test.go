@@ -25,7 +25,7 @@ func TestStateOnEvent(t *testing.T) {
 		}
 
 		state := NewFromSession(session.NewCustom(gateway.DefaultIdentifier("token"), api.NewClient("token"), handler.New()), cabinet)
-		state.onEvent(&gateway.ChannelDeleteEvent{Channel: discord.Channel{ID: 10, GuildID: 1}})
+		state.onEvent(&gateway.ChannelDeleteEvent{ID: 10, GuildID: 1})
 
 		if _, err := cabinet.Channel(11); err == nil {
 			t.Fatal("the thread of the deleted channel is still there")
@@ -113,7 +113,7 @@ func TestStateOnEvent(t *testing.T) {
 		}
 
 		t.Run("an update of the member replaces it", func(t *testing.T) {
-			if got := member(t, &gateway.ThreadMemberUpdateEvent{ThreadMember: discord.ThreadMember{ID: 11, UserID: 1}}); got == nil || got.Muted {
+			if got := member(t, &gateway.ThreadMemberUpdateEvent{ID: 11, UserID: 1}); got == nil || got.Muted {
 				t.Fatalf("member = %+v, want an unmuted one", got)
 			}
 		})

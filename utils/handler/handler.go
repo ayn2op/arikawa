@@ -16,6 +16,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 	"sync"
@@ -212,9 +213,7 @@ func (h *Handler) update(fn func(*snapshot)) {
 	var next snapshot
 	if old := h.snapshot.Load(); old != nil {
 		next.typed = make(map[reflect.Type][]*entry, len(old.typed)+1)
-		for t, entries := range old.typed {
-			next.typed[t] = entries
-		}
+		maps.Copy(next.typed, old.typed)
 		next.ifaces = old.ifaces
 	} else {
 		next.typed = make(map[reflect.Type][]*entry)

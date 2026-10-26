@@ -843,6 +843,14 @@ type (
 
 		FriendSuggestionCount int      `json:"friend_suggestion_count,omitempty"`
 		GeoOrderedRTCRegions  []string `json:"geo_ordered_rtc_regions,omitempty"`
+
+		ApexExperiments ApexExperiments `json:"apex_experiments"`
+	}
+
+	// ApexExperiments are the client's experiment assignments.
+	ApexExperiments struct {
+		// Installation is a new installation ID, sent when the one identified with is missing or invalid.
+		Installation string `json:"installation,omitempty"`
 	}
 
 	UserSession struct {

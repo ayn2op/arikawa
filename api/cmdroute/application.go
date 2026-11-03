@@ -3,8 +3,8 @@ package cmdroute
 import (
 	"fmt"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/discord"
+	"libdb.so/arikawa/v4/api"
+	"libdb.so/arikawa/v4/discord"
 )
 
 // BulkCommandsOverwriter is an interface that allows to overwrite all commands

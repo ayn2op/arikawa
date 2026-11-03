@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/diamondburned/arikawa/v3/discord"
+	"libdb.so/arikawa/v4/discord"
 )
 
 func TestRoleMemberCountsUnmarshalJSON(t *testing.T) {

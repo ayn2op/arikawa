@@ -3,9 +3,9 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/utils/httputil"
+	"libdb.so/arikawa/v4/utils/json/option"
 )
 
 // RoleMemberCounts maps role IDs to the number of members with each role.

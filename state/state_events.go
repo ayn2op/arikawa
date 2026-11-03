@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/state/store"
-	"github.com/diamondburned/arikawa/v3/utils/handler"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/gateway"
+	"libdb.so/arikawa/v4/state/store"
+	"libdb.so/arikawa/v4/utils/handler"
 )
 
 func (s *State) hookSession() {

@@ -3,7 +3,7 @@ package discord
 import (
 	"testing"
 
-	"github.com/diamondburned/arikawa/v3/utils/json"
+	"libdb.so/arikawa/v4/utils/json"
 )
 
 func TestComponentLimitsUnmarshal(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/state"
-	"github.com/diamondburned/arikawa/v3/utils/handler"
+	"libdb.so/arikawa/v4/gateway"
+	"libdb.so/arikawa/v4/state"
+	"libdb.so/arikawa/v4/utils/handler"
 )
 
 func Example() {

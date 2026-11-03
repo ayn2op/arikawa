@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
+	"libdb.so/arikawa/v4/utils/json/option"
 )
 
 type User struct {

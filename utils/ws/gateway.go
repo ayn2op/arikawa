@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/internal/lazytime"
-	"github.com/diamondburned/arikawa/v3/utils/json"
+	"libdb.so/arikawa/v4/internal/lazytime"
+	"libdb.so/arikawa/v4/utils/json"
 )
 
 // ConnectionError is given to the user if the gateway fails to connect to the

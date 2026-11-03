@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"mime/multipart"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/json/option"
-	"github.com/diamondburned/arikawa/v3/utils/sendpart"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/utils/json/option"
+	"libdb.so/arikawa/v4/utils/sendpart"
 )
 
 var EndpointInteractions = Endpoint + "interactions/"

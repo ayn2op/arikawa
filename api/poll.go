@@ -3,8 +3,8 @@ package api
 import (
 	"strconv"
 
-	"github.com/diamondburned/arikawa/v3/discord"
-	"github.com/diamondburned/arikawa/v3/utils/httputil"
+	"libdb.so/arikawa/v4/discord"
+	"libdb.so/arikawa/v4/utils/httputil"
 )
 
 // MaxPollAnswerVotersFetchLimit is the maximum number of users that can be

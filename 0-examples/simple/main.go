@@ -7,9 +7,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/session"
-	"github.com/diamondburned/arikawa/v3/utils/handler"
+	"libdb.so/arikawa/v4/gateway"
+	"libdb.so/arikawa/v4/session"
+	"libdb.so/arikawa/v4/utils/handler"
 )
 
 // To run, do `BOT_TOKEN="TOKEN HERE" go run .`

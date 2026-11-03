@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/diamondburned/arikawa/v3/api"
-	"github.com/diamondburned/arikawa/v3/gateway"
-	"github.com/diamondburned/arikawa/v3/session"
-	"github.com/diamondburned/arikawa/v3/utils/handler"
+	"libdb.so/arikawa/v4/api"
+	"libdb.so/arikawa/v4/gateway"
+	"libdb.so/arikawa/v4/session"
+	"libdb.so/arikawa/v4/utils/handler"
 )
 
 // Shard defines a shard gateway interface that the shard manager can use.

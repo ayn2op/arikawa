@@ -28,7 +28,7 @@ var (
 // The user should initialize handlers and intents in the opts function.
 func NewShardFunc(opts func(*shard.Manager, *State)) shard.NewShardFunc {
 	return func(m *shard.Manager, id *gateway.Identifier) (shard.Shard, error) {
-		sessn := session.NewCustom(*id, api.NewClient(id.Token), handler.New())
+		sessn := session.NewCustom(*id, api.NewClient(id.Token), &handler.Handlers[gateway.Event]{})
 		state := NewFromSession(sessn, defaultstore.New())
 		opts(m, state)
 		return state, nil
@@ -88,12 +88,12 @@ type State struct {
 	// PreHandler is the manual hook that is executed before the State handler
 	// is. This should only be used for low-level operations.
 	// It's recommended to set Synchronous to true if you mutate the events.
-	PreHandler *handler.Handler // default nil
+	PreHandler *handler.Handlers[gateway.Event] // default nil
 
 	// Command handler with inherited methods. Ran after PreHandler. You should
 	// most of the time use this instead of Session's, to avoid race conditions
 	// with the State.
-	*handler.Handler
+	*handler.Handlers[gateway.Event]
 
 	// List of channels with few messages, so it doesn't bother hitting the API
 	// again.
@@ -140,7 +140,7 @@ func NewFromSession(s *session.Session, cabinet *store.Cabinet) *State {
 	state := &State{
 		Session:           s,
 		Cabinet:           cabinet,
-		Handler:           handler.New(),
+		Handlers:          &handler.Handlers[gateway.Event]{},
 		StateLog:          func(err error) {},
 		readyMu:           new(sync.Mutex),
 		fewMessages:       map[discord.ChannelID]struct{}{},
@@ -159,10 +159,10 @@ func NewFromSession(s *session.Session, cabinet *store.Cabinet) *State {
 // This function may work for most use cases; however, it will not work for all
 // use cases. For example, bots that need the gateway won't be able to fully
 // work, which is expected.
-func NewAPIOnlyState(token string, h *handler.Handler) *State {
+func NewAPIOnlyState(token string, h *handler.Handlers[gateway.Event]) *State {
 	return &State{
 		Session:  session.NewCustom(gateway.DefaultIdentifier(token), api.NewClient(token), h),
-		Handler:  h,
+		Handlers: h,
 		Cabinet:  store.NoopCabinet,
 		StateLog: func(err error) {},
 	}

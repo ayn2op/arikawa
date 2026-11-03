@@ -9,6 +9,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
 	"github.com/diamondburned/arikawa/v3/session"
 	"github.com/diamondburned/arikawa/v3/session/shard"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
 )
 
 func TestSharding(t *testing.T) {
@@ -25,9 +26,11 @@ func TestSharding(t *testing.T) {
 			t.Log(now, "initializing shard")
 
 			s.AddIntents(gateway.IntentGuilds)
-			s.AddHandler(readyCh)
-			s.AddHandler(func(err error) {
-				t.Log(err)
+			handler.Add(s, func(ev *gateway.ReadyEvent) { readyCh <- ev })
+			handler.Add(s, func(ev gateway.Event) {
+				if err, ok := ev.(error); ok {
+					t.Log(err)
+				}
 			})
 		},
 	))

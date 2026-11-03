@@ -109,18 +109,18 @@ func Login(ctx context.Context, email, password, mfa string) (*Session, error) {
 
 // NewWithIdentifier creates a bare Session with the given identifier.
 func NewWithIdentifier(id gateway.Identifier) *Session {
-	return NewCustom(id, api.NewClient(id.Token), handler.New())
+	return NewCustom(id, api.NewClient(id.Token), &handler.Handlers[gateway.Event]{})
 }
 
 // NewWithGateway constructs a bare Session from the given UNOPENED gateway.
-func NewWithGateway(g *gateway.Gateway, h *handler.Handlers) *Session {
+func NewWithGateway(g *gateway.Gateway, h *handler.Handlers[gateway.Event]) *Session {
 	state := g.State()
 	client := api.NewClient(state.Identifier.Token)
 	return newCustom(state.Identifier, client, h, g)
 }
 
 // NewCustom constructs a bare Session from the given parameters.
-func NewCustom(id gateway.Identifier, cl *api.Client, h *handler.Handlers) *Session {
+func NewCustom(id gateway.Identifier, cl *api.Client, h *handler.Handlers[gateway.Event]) *Session {
 	return newCustom(id, cl, h, nil)
 }
 
@@ -273,7 +273,7 @@ func (s *Session) Connect(ctx context.Context) error {
 // Open opens the Discord gateway and its handler, then waits until either the
 // Ready or Resumed event gets through. Prefer using Connect instead of Open.
 func (s *Session) Open(ctx context.Context) error {
-	evCh := make(chan any)
+	evCh := make(chan gateway.Event)
 
 	s.state.Lock()
 	defer s.state.Unlock()
@@ -295,8 +295,8 @@ func (s *Session) Open(ctx context.Context) error {
 	// Make a context that's stored in state so this can be used throughout.
 	s.state.ctx, s.state.cancel = context.WithCancel(context.Background())
 
-	// TODO: change this to AddSyncHandler.
-	rm := s.AddHandler(evCh)
+	// TODO: change this to HandleBlockingChannel.
+	rm := s.HandleChannel(evCh)
 	defer rm()
 
 	opCh := s.state.gateway.Connect(s.state.ctx)
@@ -379,7 +379,7 @@ func (s *Session) WithContext(ctx context.Context) *Session {
 func (s *Session) AddInteractionHandler(h webhook.InteractionHandler) {
 	// State doesn't override this, but it doesn't touch
 	// InteractionCreateEvents, so it shouldn't need to.
-	s.AddHandler(func(ev *gateway.InteractionCreateEvent) {
+	handler.Add(s, func(ev *gateway.InteractionCreateEvent) {
 		if resp := h.HandleInteraction(&ev.InteractionEvent); resp != nil {
 			if err := s.RespondInteraction(ev.ID, ev.Token, *resp); err != nil {
 				s.OnInteractionError(ev, err)

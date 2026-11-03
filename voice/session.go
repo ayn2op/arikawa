@@ -49,8 +49,8 @@ func (e ReconnectError) Unwrap() error { return e.Err }
 
 // MainSession abstracts both session.Session and state.State.
 type MainSession interface {
-	// AddHandler describes the method in handler.Handler.
-	AddHandler(handler any) (rm func())
+	// Handler is used to listen for voice server and voice state updates.
+	handler.Handler[gateway.Event]
 	// Me returns the current user.
 	Me() (*discord.User, error)
 	// Channel queries for the channel with the given ID.
@@ -67,7 +67,7 @@ var (
 // Session is a single voice session that wraps around the voice gateway and UDP
 // connection.
 type Session struct {
-	*handler.Handler
+	*handler.Handlers[any]
 	session MainSession
 
 	mut sync.RWMutex
@@ -118,8 +118,8 @@ func NewSessionCustom(ses MainSession, userID discord.UserID) *Session {
 	close(closed)
 
 	session := &Session{
-		Handler: handler.New(),
-		session: ses,
+		Handlers: &handler.Handlers[any]{},
+		session:  ses,
 		state: voicegateway.State{
 			UserID: userID,
 		},
@@ -206,8 +206,8 @@ func (s *Session) JoinChannelAndSpeak(ctx context.Context, chID discord.ChannelI
 }
 
 type waitEventChs struct {
-	serverUpdate chan *gateway.VoiceServerUpdateEvent
-	stateUpdate  chan *gateway.VoiceStateUpdateEvent
+	serverUpdate <-chan *gateway.VoiceServerUpdateEvent
+	stateUpdate  <-chan *gateway.VoiceStateUpdateEvent
 }
 
 // JoinChannel joins the given voice channel with the default timeout.
@@ -245,27 +245,21 @@ func (s *Session) JoinChannel(ctx context.Context, chID discord.ChannelID, mute,
 
 	if s.detachReconnect == nil {
 		s.detachReconnect = []func(){
-			s.session.AddHandler(s.updateServer),
-			s.session.AddHandler(s.updateState),
+			handler.Add(s.session, s.updateServer),
+			handler.Add(s.session, s.updateState),
 		}
 	}
+
+	// Bind the handlers. They are disconnected once the function exits.
+	chCtx, chCancel := context.WithCancel(context.Background())
+	defer chCancel()
 
 	chs := waitEventChs{
-		serverUpdate: make(chan *gateway.VoiceServerUpdateEvent),
-		stateUpdate:  make(chan *gateway.VoiceStateUpdateEvent),
+		serverUpdate: handler.ExpectCh(chCtx, s.session,
+			func(*gateway.VoiceServerUpdateEvent) bool { return true }),
+		stateUpdate: handler.ExpectCh(chCtx, s.session,
+			func(*gateway.VoiceStateUpdateEvent) bool { return true }),
 	}
-
-	// Bind the handlers.
-	cancels := []func(){
-		s.session.AddHandler(chs.serverUpdate),
-		s.session.AddHandler(chs.stateUpdate),
-	}
-	// Disconnects the handlers once the function exits.
-	defer func() {
-		for _, cancel := range cancels {
-			cancel()
-		}
-	}()
 
 	// Ensure gateway and voiceUDP are already closed.
 	s.ensureClosed()
@@ -408,12 +402,12 @@ func (s *Session) reconnectCtx(ctx context.Context) error {
 		s.gwCancel = nil
 		// Emit the error. It's fine to do this here since this is the only
 		// place that can error out.
-		s.Handler.Call(&ReconnectError{err})
+		s.Handlers.Dispatch(&ReconnectError{err})
 		return fmt.Errorf("cannot wait for event sequence from voice gateway: %w", err)
 	}
 
 	// Start dispatching.
-	s.gwDone = ophandler.Loop(gwch, s.Handler)
+	s.gwDone = ophandler.Loop(gwch, s.Handlers)
 
 	ws.WSDebug("Voice reconnectCtx finished with no error")
 
@@ -470,7 +464,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 			}
 
 			// Dispatch this event to the handler.
-			s.Handler.Call(ev.Data)
+			s.Handlers.Dispatch(ev.Data)
 		}
 	}
 }

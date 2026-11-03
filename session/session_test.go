@@ -7,6 +7,7 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
 )
 
 func TestSession(t *testing.T) {
@@ -26,7 +27,7 @@ func TestSession(t *testing.T) {
 	readyCh := make(chan *gateway.ReadyEvent, 1)
 
 	s := NewWithIntents(env.BotToken, gateway.IntentGuilds)
-	s.AddHandler(readyCh)
+	handler.Add(s, func(ev *gateway.ReadyEvent) { readyCh <- ev })
 
 	for i := 0; i < attempts; i++ {
 		if err := s.Open(ctx); err != nil {
@@ -66,7 +67,7 @@ func TestSessionConnect(t *testing.T) {
 	readyCh := make(chan *gateway.ReadyEvent, 1)
 
 	s := NewWithIntents(env.BotToken, gateway.IntentGuilds)
-	s.AddHandler(readyCh)
+	handler.Add(s, func(ev *gateway.ReadyEvent) { readyCh <- ev })
 
 	for i := 0; i < attempts; i++ {
 		ctx, cancel := context.WithCancel(ctx)

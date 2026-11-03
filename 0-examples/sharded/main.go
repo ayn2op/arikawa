@@ -10,6 +10,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/session/shard"
 	"github.com/diamondburned/arikawa/v3/state"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
 )
 
 // To run, do `BOT_TOKEN="TOKEN HERE" go run .`
@@ -25,7 +26,7 @@ func main() {
 		s.AddIntents(gateway.IntentGuildMessages)
 		s.AddIntents(gateway.IntentDirectMessages)
 
-		s.AddHandler(func(c *gateway.MessageCreateEvent) {
+		handler.Add(s, func(c *gateway.MessageCreateEvent) {
 			_, shardIx := m.FromGuildID(c.GuildID)
 			log.Println(c.Author.Tag(), "sent", c.Content, "on shard", shardIx)
 		})

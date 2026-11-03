@@ -9,6 +9,7 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
 )
 
 // To run, do `BOT_TOKEN="TOKEN HERE" go run .`
@@ -20,7 +21,7 @@ func main() {
 	}
 
 	s := session.New("Bot " + token)
-	s.AddHandler(func(c *gateway.MessageCreateEvent) {
+	handler.Add(s, func(c *gateway.MessageCreateEvent) {
 		log.Println(c.Author.Username, "sent", c.Content)
 	})
 

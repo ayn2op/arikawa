@@ -14,6 +14,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/internal/testenv"
 	"github.com/diamondburned/arikawa/v3/state"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 	"github.com/diamondburned/arikawa/v3/utils/ws"
 	"github.com/diamondburned/arikawa/v3/voice/testdata"
@@ -94,7 +95,7 @@ func testIntegrationOnce(t *testing.T, s *testState) {
 	finish := timer()
 
 	// Add handler to receive speaking update beforehand.
-	v.AddHandler(func(e *voicegateway.SpeakingEvent) {
+	handler.Add(v, func(e *voicegateway.SpeakingEvent) {
 		finish("receiving voice speaking event")
 	})
 

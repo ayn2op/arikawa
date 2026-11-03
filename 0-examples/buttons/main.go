@@ -9,6 +9,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/session"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
@@ -29,7 +30,7 @@ func main() {
 		log.Fatalln("failed to get application ID:", err)
 	}
 
-	s.AddHandler(func(e *gateway.InteractionCreateEvent) {
+	handler.Add(s, func(e *gateway.InteractionCreateEvent) {
 		var resp api.InteractionResponse
 
 		switch data := e.Data.(type) {

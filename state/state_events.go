@@ -7,13 +7,14 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/state/store"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
 )
 
 func (s *State) hookSession() {
-	s.Session.AddSyncHandler(func(event any) {
+	handler.AddSynchronous(s.Session, func(event gateway.Event) {
 		// Call the pre-handler before the state handler.
 		if s.PreHandler != nil {
-			s.PreHandler.Call(event)
+			s.PreHandler.Dispatch(event)
 		}
 
 		// Run the state handler.
@@ -21,13 +22,13 @@ func (s *State) hookSession() {
 
 		switch event := event.(type) {
 		case *gateway.ReadyEvent:
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 			s.handleReady(event)
 		case *gateway.GuildCreateEvent:
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 			s.handleGuildCreate(event)
 		case *gateway.GuildDeleteEvent:
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 			s.handleGuildDelete(event)
 
 		// https://github.com/discord/discord-api-docs/commit/01665c4
@@ -35,16 +36,16 @@ func (s *State) hookSession() {
 			if event.Member != nil {
 				event.Member.User = event.Author
 			}
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 
 		case *gateway.MessageUpdateEvent:
 			if event.Member != nil {
 				event.Member.User = event.Author
 			}
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 
 		default:
-			s.Handler.Call(event)
+			s.Handlers.Dispatch(event)
 		}
 	})
 }

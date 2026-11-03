@@ -30,7 +30,7 @@ type NewShardFunc func(m *Manager, id *gateway.Identifier) (Shard, error)
 // Accessing any shard and adding a handler will add a handler for all shards.
 func NewSessionShard(f func(m *Manager, s *session.Session)) NewShardFunc {
 	return func(m *Manager, id *gateway.Identifier) (Shard, error) {
-		s := session.NewCustom(*id, api.NewClient(id.Token), handler.New())
+		s := session.NewCustom(*id, api.NewClient(id.Token), &handler.Handlers[gateway.Event]{})
 		f(m, s)
 		return s, nil
 	}

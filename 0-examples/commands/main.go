@@ -13,6 +13,7 @@ import (
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/state"
+	arikawahandler "github.com/diamondburned/arikawa/v3/utils/handler"
 	"github.com/diamondburned/arikawa/v3/utils/json/option"
 )
 
@@ -49,7 +50,7 @@ func main() {
 	h := newHandler(state.New("Bot " + token))
 	h.s.AddInteractionHandler(h)
 	h.s.AddIntents(gateway.IntentGuilds)
-	h.s.AddHandler(func(*gateway.ReadyEvent) {
+	arikawahandler.Add(h.s, func(*gateway.ReadyEvent) {
 		me, _ := h.s.Me()
 		log.Println("connected to the gateway as", me.Tag())
 	})

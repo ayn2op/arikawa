@@ -8,12 +8,13 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/state"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
 )
 
 func Example() {
 	s := state.New("Bot " + os.Getenv("DISCORD_TOKEN"))
 	s.AddIntents(gateway.IntentGuilds | gateway.IntentGuildMessages)
-	s.AddHandler(func(m *gateway.MessageCreateEvent) {
+	handler.Add(s, func(m *gateway.MessageCreateEvent) {
 		log.Printf("%s: %s", m.Author.Username, m.Content)
 	})
 

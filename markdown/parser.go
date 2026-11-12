@@ -22,6 +22,7 @@ func inlineParsers(emojiParser *emoji) []util.PrioritizedValue[parser.InlinePars
 		util.Prioritized[parser.InlineParser](emojiParser, 200),
 		util.Prioritized[parser.InlineParser](inlineCodeSpan{}, 300),
 		util.Prioritized[parser.InlineParser](inline{}, 350),
+		util.Prioritized[parser.InlineParser](timestamp{}, 375),
 		util.Prioritized[parser.InlineParser](mention{}, 400),
 		util.Prioritized[parser.InlineParser](autolink{}, 500),
 		util.Prioritized(parser.NewLinkParser(), 600),

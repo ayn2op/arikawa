@@ -4,6 +4,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -119,6 +120,10 @@ func (r *basicRenderWalker) walk(w io.Writer, source []byte, n ast.Node, enter b
 	case *Emoji:
 		if enter {
 			io.WriteString(w, ":"+n.Name+":")
+		}
+	case *Timestamp:
+		if enter {
+			io.WriteString(w, n.Format(time.Now()))
 		}
 	case *Mention:
 		if enter {

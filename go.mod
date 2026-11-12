@@ -7,10 +7,10 @@ require (
 	github.com/gorilla/schema v1.4.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/kylelemons/godebug v1.1.0
-	github.com/yuin/goldmark/v2 v2.1.6
-	go4.org v0.0.0-20260112195520-a5071408f32f
-	golang.org/x/crypto v0.58.0
+	github.com/yuin/goldmark/v2 v2.1.16
+	go4.org v0.0.0-20261028031214-ed6929a230fe
+	golang.org/x/crypto v0.59.0
 	golang.org/x/time v0.16.0
 )
 
-require golang.org/x/sys v0.49.0 // indirect
+require golang.org/x/sys v0.50.0 // indirect

@@ -95,7 +95,10 @@ type Session struct {
 	// sendBuf and recvBuf are what frames are encrypted and decrypted into.
 	sendBuf, recvBuf []byte
 
-	gateway  *voicegateway.Gateway
+	gateway *voicegateway.Gateway
+	// speaking is what Speaking was last called with, which each gateway
+	// connected to is told, for what is written to be heard.
+	speaking voicegateway.SpeakingFlag
 	gwCancel context.CancelFunc
 	gwDone   <-chan struct{}
 
@@ -438,6 +441,12 @@ func (s *Session) reconnectCtx(ctx context.Context) error {
 	// Start dispatching.
 	s.gwDone = ophandler.Loop(gwch, s.Handler)
 
+	if s.speaking != voicegateway.NotSpeaking {
+		if err := s.gateway.Speaking(ctx, s.speaking); err != nil {
+			return fmt.Errorf("failed to send speaking: %w", err)
+		}
+	}
+
 	ws.WSDebug("Voice reconnectCtx finished with no error")
 
 	return nil
@@ -513,6 +522,7 @@ func (s *Session) spinGateway(ctx context.Context, gwch <-chan ws.Op) error {
 // done after whatsoever.
 func (s *Session) Speaking(ctx context.Context, flag voicegateway.SpeakingFlag) error {
 	s.mut.Lock()
+	s.speaking = flag
 	gateway := s.gateway
 	s.mut.Unlock()
 

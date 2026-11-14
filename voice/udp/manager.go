@@ -167,8 +167,7 @@ func (m *Manager) Dial(ctx context.Context, addr string, ssrc uint32) (*Connecti
 
 	conn, err := m.dialer(ctx, addr, ssrc)
 	if err != nil {
-		// Unlock if we failed.
-		<-m.connLock
+		// The Manager stays paused for whoever paused it to continue it.
 		return nil, fmt.Errorf("failed to dial: %w", err)
 	}
 

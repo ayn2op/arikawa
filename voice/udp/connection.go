@@ -115,34 +115,11 @@ func DialConnectionCustom(
 		return nil, fmt.Errorf("failed to dial host: %w", err)
 	}
 
-	// https://discord.com/developers/docs/topics/voice-connections#ip-discovery
-	var ssrcBuffer [74]byte
-	binary.BigEndian.PutUint16(ssrcBuffer[0:2], 1)
-	binary.BigEndian.PutUint16(ssrcBuffer[2:4], 70)
-	binary.BigEndian.PutUint32(ssrcBuffer[4:8], ssrc)
-
-	_, err = conn.Write(ssrcBuffer[:])
+	ip, port, err := discoverIP(ctx, conn, ssrc)
 	if err != nil {
-		return nil, fmt.Errorf("failed to write SSRC buffer: %w", err)
+		conn.Close()
+		return nil, err
 	}
-
-	var ipBuffer [74]byte
-
-	// ReadFull makes sure to read all 74 bytes.
-	_, err = io.ReadFull(conn, ipBuffer[:])
-	if err != nil {
-		return nil, fmt.Errorf("failed to read IP buffer: %w", err)
-	}
-
-	ipbody := ipBuffer[8:72]
-
-	nullPos := bytes.Index(ipbody, []byte{'\x00'})
-	if nullPos < 0 {
-		return nil, errors.New("UDP IP discovery did not contain a null terminator")
-	}
-
-	ip := ipbody[:nullPos]
-	port := binary.BigEndian.Uint16(ipBuffer[72:74])
 
 	// https://discord.com/developers/docs/topics/voice-connections#encrypting-and-sending-voice
 	packet := [12]byte{
@@ -156,7 +133,7 @@ func DialConnectionCustom(
 	binary.BigEndian.PutUint32(packet[8:12], ssrc) // SSRC
 
 	c := &Connection{
-		GatewayIP:   string(ip),
+		GatewayIP:   ip,
 		GatewayPort: port,
 		frequency:   time.NewTicker(20 * time.Millisecond),
 		timeIncr:    960,
@@ -171,6 +148,46 @@ func DialConnectionCustom(
 	}
 	go c.keepAlive()
 	return c, nil
+}
+
+// discoverIP returns the address that the voice server sees conn send from,
+// which is what it is told to send to.
+//
+// https://discord.com/developers/docs/topics/voice-connections#ip-discovery
+func discoverIP(ctx context.Context, conn net.Conn, ssrc uint32) (string, uint16, error) {
+	// The answer may never arrive over UDP, so reading it stops when ctx ends.
+	stop := context.AfterFunc(ctx, func() { conn.SetReadDeadline(time.Now()) })
+	defer stop()
+
+	var request [74]byte
+	binary.BigEndian.PutUint16(request[0:2], 1)
+	binary.BigEndian.PutUint16(request[2:4], 70)
+	binary.BigEndian.PutUint32(request[4:8], ssrc)
+
+	if _, err := conn.Write(request[:]); err != nil {
+		return "", 0, fmt.Errorf("failed to write SSRC buffer: %w", err)
+	}
+
+	var response [74]byte
+	if _, err := io.ReadFull(conn, response[:]); err != nil {
+		if ctx.Err() != nil {
+			err = ctx.Err()
+		}
+		return "", 0, fmt.Errorf("failed to read IP buffer: %w", err)
+	}
+
+	// The read deadline would otherwise outlast IP discovery.
+	if !stop() {
+		return "", 0, ctx.Err()
+	}
+
+	address := response[8:72]
+	nullPos := bytes.IndexByte(address, 0)
+	if nullPos < 0 {
+		return "", 0, errors.New("UDP IP discovery did not contain a null terminator")
+	}
+
+	return string(address[:nullPos]), binary.BigEndian.Uint16(response[72:74]), nil
 }
 
 // Latency returns how long the voice server took to answer the last ping that
